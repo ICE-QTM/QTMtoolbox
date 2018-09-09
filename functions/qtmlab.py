@@ -33,7 +33,7 @@ def move(device, variable, setpoint, rate):
     # Get current Value
     read_command = getattr(device, 'read_' + variable)
     cur_val = float(read_command())
-    
+
     # Determine number of steps
     Dt = abs(setpoint - cur_val) / rate
     nSteps = int(round(Dt / dt))
@@ -57,21 +57,21 @@ def move(device, variable, setpoint, rate):
 def measure(md=None):
     """
     The measure command measures the values of every <device> and <variable>
-    as specified in the 'measurement dictionary ', meas_dict. 
+    as specified in the 'measurement dictionary ', meas_dict.
     """
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
         md = meas_dict
-       
+
     # Loop over list of devices
     data = np.zeros(len(md))
     i = 0
-    for device in md: 
+    for device in md:
         # Retrieve and store data
         meas_command = getattr(md[device]['dev'], 'read_' + md[device]['var'])
         data[i] = float(meas_command())
         i += 1
-        
+
     return data
 
 
@@ -79,13 +79,13 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
     """
     The sweep command sweeps the <variable> of <device>, from <start> to <stop>.
     Sweeping is done at <rate> and <npoints> are recorded to a datafile saved
-    as <filename>. 
+    as <filename>.
     For measurements, the 'measurement dictionary', meas_dict, is used.
     """
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
         md = meas_dict
-        
+
     # Initialise datafile and write header
     while os.path.isfile(filename):
         print('The file already exists. Appending "_1" to the filename.')
@@ -93,18 +93,18 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
         filename = filename[0] + '_1.' + filename[1]
     # Get specified variable name, or use default
     if sweepdev is None:
-        sweepdev = 'sweepdev'  
-    header = sweepdev  
+        sweepdev = 'sweepdev'
+    header = sweepdev
     # Add device of 'meas_list'
     for dev in md:
-        header = header + ', ' + dev   
+        header = header + ', ' + dev
     # Write header to file
     with open(filename, 'w') as file:
         file.write(header + '\n')
-            
+
     # Move to initial value
     move(device, variable, start, rate)
-        
+
     # Create sweep_curve
     sweep_curve = np.round(np.linspace(start, stop, npoints), 3)
 
@@ -115,40 +115,35 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
         move(device, variable, sweep_curve[i], rate)
         # Wait, then measure
         time.sleep(dtw)
-        print('Performing measurement.')        
+        print('Performing measurement.')
         data = np.hstack((sweep_curve[i], measure()))
-        
+
         # Add data to file
         datastr = np.array2string(data, separator=', ')[1:-1]
         with open(filename, 'a') as file:
             file.write(datastr + '\n')
-            
-        
-        
-    
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
+    """
+    The waitfor command waits until <variable> of <device> reached
+    <setpoint> within +/- <threshold> for at least <tmin>.
+    Note: <tmin> is in seconds.
+    """
+    stable = False
+    t_stable = 0
+    while not stable:
+        # Read value
+        read_command = getattr(device, 'read_' + variable)
+        cur_val = float(read_command())
+        # Determine if value within threshold
+        if abs(cur_val - setpoint) <= threshold:
+            # Add time to counter
+            t_stable += 10
+        else:
+            # Reset counter
+            t_stable = 0
+        time.sleep(10)
+        # Check if t_stable > tmin
+        if t_stable >= tmin:
+            stable = True
