@@ -50,7 +50,7 @@ def move(device, variable, setpoint, rate):
             while not reached:
                 time.sleep(dt)
                 cur_val = float(read_command())
-                if round(cur_val, 3) == move_curve[i]:
+                if round(cur_val, 2) == move_curve[i]:
                     reached = True
 
 
