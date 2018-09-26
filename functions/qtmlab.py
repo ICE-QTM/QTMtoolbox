@@ -119,7 +119,7 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
         data = np.hstack((sweep_curve[i], measure()))
 
         # Add data to file
-        datastr = np.array2string(data, separator=', ')[1:-1]
+        datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
         with open(filename, 'a') as file:
             file.write(datastr + '\n')
 
@@ -147,3 +147,29 @@ def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
         # Check if t_stable > tmin
         if t_stable >= tmin:
             stable = True
+
+def record(dt, npoints, filename, md=None):
+    """
+    The record command records data with a time interval of <dt> seconds. It will
+    record data for a number of <npoints> and store the data in <filename>.
+    """
+    # Trick to make sure that dictionary loading is handled properly at startup
+    if md is None:
+        md = meas_dict
+
+    # Build header
+    header = ''
+    for dev in md:
+        header = header + ', ' + dev
+    header = header[1:]
+    # Write header to file
+    with open(filename, 'w') as file:
+        file.write(header + '\n')
+
+    # Perform record
+    for i in range(npoints):
+        data = measure()
+        datastr = np.array2str(data, separator=', ')[1:-1].replace('\n','')
+        with open(filename, 'a') as file:
+            file.write(datastr + '\n')
+        time.sleep(dt)
