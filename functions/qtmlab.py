@@ -30,6 +30,19 @@ def move(device, variable, setpoint, rate):
     Note: a variable can only be moved if its instrument class has both
     write_var and read_var modules.
     """
+
+    # Oxford Magnet Controller - timing issue fix
+    """
+    For Oxford IPS120-10 Magnet Controllers, timing is a problem.
+    Sending and receiving data over GPIB takes a considerable amount
+    of time, and a timestep of 20 ms results in a total 'move' duration
+    that is 8x the expected time. We therefore set the timestep
+    for the Magnet Controller to 75 ms.
+    """
+    devtype = str(type(device))[1:-1].split('.')[-1].strip("'")
+    if devtype == 'ips120':
+        dt = 0.75
+
     # Get current Value
     read_command = getattr(device, 'read_' + variable)
     cur_val = float(read_command())
@@ -148,10 +161,11 @@ def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
         if t_stable >= tmin:
             stable = True
 
+
 def record(dt, npoints, filename, md=None):
     """
-    The record command records data with a time interval of <dt> seconds. It will
-    record data for a number of <npoints> and store the data in <filename>.
+    The record command records data with a time interval of <dt> seconds. It
+    will record data for a number of <npoints> and store it in <filename>.
     """
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
