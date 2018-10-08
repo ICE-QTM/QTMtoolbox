@@ -35,13 +35,34 @@ def move(device, variable, setpoint, rate):
     """
     For Oxford IPS120-10 Magnet Controllers, timing is a problem.
     Sending and receiving data over GPIB takes a considerable amount
-    of time, and a timestep of 20 ms results in a total 'move' duration
-    that is 8x the expected time. We therefore set the timestep
-    for the Magnet Controller to 75 ms.
+    of time. We therefore change the magnet's rate and issue a single set
+    command. Then, we check every once in a while (100 ms delay) if it is
+    already at its setpoint.
     """
+    #---------------------------------------------------------------------------
     devtype = str(type(device))[1:-1].split('.')[-1].strip("'")
     if devtype == 'ips120':
-        dt = 0.75
+        read_command = getattr(device, 'read_' + variable)
+        cur_val = float(read_command())
+
+        ratepm = round(rate * 60, 3)
+        if ratepm >= 0.4:
+            ratepm = 0.4
+
+        write_rate = getattr(device, 'write_rate')
+        write_rate(ratepm)
+
+        write_command = getattr(device, 'write_' + variable)
+        write_command(setpoint)
+
+        reached = False
+        while not reached:
+            time.sleep(0.1)
+            cur_val = float(read_command())
+            if round(cur_val, 2) == round(setpoint, 2):
+                reached = True
+    #---------------------------------------------------------------------------
+
 
     # Get current Value
     read_command = getattr(device, 'read_' + variable)
