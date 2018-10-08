@@ -22,7 +22,7 @@ class WrongInstrErr(Exception):
 class Triton:
     type = 'Oxford Triton'
 
-    def __init__(self, IPaddress, port):
+    def __init__(self, IPaddress, port=33576):
         # Port should be a number, not a string
         if not isinstance(port, int):
             port = int(port)
