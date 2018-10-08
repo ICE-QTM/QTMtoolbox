@@ -49,10 +49,12 @@ class Triton:
         return resp
 
     def write_PID5(self, val):
-        self.s.sendall('SET:DEV:T5:TEMP:LOOP:TSET:' + str(val) + '\r\n'.encode())
+        self.s.sendall(('SET:DEV:T5:TEMP:LOOP:TSET:' + str(val) + '\r\n').encode())
+        resp = self.s.recv(1400).decode()
 
     def write_PID8(self, val):
-        self.s.sendall('SET:DEV:T5:TEMP:LOOP:TSET:' + str(val) + '\r\n'.encode())
+        self.s.sendall(('SET:DEV:T8:TEMP:LOOP:TSET:' + str(val) + '\r\n').encode())
+        resp = self.s.recv(1400).decode()
 
     def read_PID5(self):
         self.s.sendall('READ:DEV:T5:TEMP:LOOP:TSET\r\n'.encode())
@@ -65,7 +67,8 @@ class Triton:
         return resp
 
     def write_range(self, val):
-        self.s.sendall('SET:DEV:T8:TEMP:LOOP:RANGE:' + str(val) + '\r\n'.encode())
+        self.s.sendall(('SET:DEV:T8:TEMP:LOOP:RANGE:' + str(val) + '\r\n').encode())
+        resp = self.s.recv(1400).decode()
 
     def read_range(self):
         self.s.sendall('READ:DEV:T8:TEMP:LOOP:RANGE\r\n'.encode())
@@ -74,9 +77,11 @@ class Triton:
 
     def loop_on(self):
         self.s.sendall('SET:DEV:T8:TEMP:LOOP:MODE:ON\r\n'.encode())
+        resp = self.s.recv(1400).decode()
 
     def loop_off(self):
         self.s.sendall('SET:DEV:T8:TEMP:LOOP:MODE:OFF\r\n'.encode())
+        resp = self.s.recv(1400).decode()
 
     def read_loop(self):
         self.s.sendall('READ:DEV:T8:TEMP:LOOP:MODE\r\n'.encode())
@@ -84,7 +89,8 @@ class Triton:
         return resp
 
     def write_Trate(self, val):
-        self.s.sendall('SET:DEV:T8:TEMP:LOOP:RAMP:RATE:' + str(val) + '\r\n'.encode())
+        self.s.sendall(('SET:DEV:T8:TEMP:LOOP:RAMP:RATE:' + str(val) + '\r\n').encode())
+        resp = self.s.recv(1400).decode()
 
     def read_Trate(self):
         self.s.sendall('READ:DEV:T8:TEMP:LOOP:RAMP:RATE\r\n'.encode())
@@ -92,7 +98,8 @@ class Triton:
         return resp
 
     def write_H1(self, val):
-        self.s.sendall('SET:DEV:H1:HTR:SIG:POWR:' + str(val) + '\r\n'.encode())
+        self.s.sendall(('SET:DEV:H1:HTR:SIG:POWR:' + str(val) + '\r\n').encode())
+        resp = self.s.recv(1400).decode()
 
     def read_H1(self):
         self.s.sendall('READ:DEV:H1:HTR:SIG:POWR\r\n'.encode())
