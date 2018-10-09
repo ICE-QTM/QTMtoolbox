@@ -48,6 +48,9 @@ def move(device, variable, setpoint, rate):
         ratepm = round(rate * 60, 3)
         if ratepm >= 0.4:
             ratepm = 0.4
+        # Don't put rate to zero if move setpoint == current value    
+        if ratepm == 0
+            ratepm = 0.1
 
         write_rate = getattr(device, 'write_rate')
         write_rate(ratepm)
@@ -61,6 +64,8 @@ def move(device, variable, setpoint, rate):
             cur_val = float(read_command())
             if round(cur_val, 2) == round(setpoint, 2):
                 reached = True
+        
+        return
     #---------------------------------------------------------------------------
 
 
