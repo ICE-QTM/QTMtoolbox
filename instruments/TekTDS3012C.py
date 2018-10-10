@@ -57,3 +57,7 @@ class TekTDS3012C:
         resp = self.visa.query('MEASU:MEAS4:VAL?')
         resp = float(resp.split(' ')[1])
         return resp
+        
+    def write_horzdiv(self, val):
+        val = float(val)
+        self.visa.write('HOR:MAI:SCA ' + str(val) + '\n')
