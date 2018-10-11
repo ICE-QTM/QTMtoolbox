@@ -48,7 +48,7 @@ def move(device, variable, setpoint, rate):
         ratepm = round(rate * 60, 3)
         if ratepm >= 0.4:
             ratepm = 0.4
-        # Don't put rate to zero if move setpoint == current value    
+        # Don't put rate to zero if move setpoint == current value
         if ratepm == 0
             ratepm = 0.1
 
@@ -64,7 +64,7 @@ def move(device, variable, setpoint, rate):
             cur_val = float(read_command())
             if round(cur_val, 2) == round(setpoint, 2):
                 reached = True
-        
+
         return
     #---------------------------------------------------------------------------
 
@@ -198,10 +198,9 @@ def record(dt, npoints, filename, md=None):
         md = meas_dict
 
     # Build header
-    header = ''
+    header = 'time'
     for dev in md:
         header = header + ', ' + dev
-    header = header[1:]
     # Write header to file
     with open(filename, 'w') as file:
         file.write(header + '\n')
@@ -209,7 +208,7 @@ def record(dt, npoints, filename, md=None):
     # Perform record
     for i in range(npoints):
         data = measure()
-        datastr = np.array2str(data, separator=', ')[1:-1].replace('\n','')
+        datastr = (str(i*dt) + ', ' + np.array2str(data, separator=', ')[1:-1]).replace('\n', '')
         with open(filename, 'a') as file:
             file.write(datastr + '\n')
         time.sleep(dt)
