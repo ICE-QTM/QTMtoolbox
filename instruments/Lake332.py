@@ -9,6 +9,12 @@ Version 1.0 (2018-08-24)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
+
+Settings for the LakeShore controller (use <Interface> front button,
+then cycle through menu with <Enter>):
+- Baud rate:    9600
+- IEEE addr:    choose GPIB address
+- IEEE term:    Cr Lf
 """
 
 import visa
