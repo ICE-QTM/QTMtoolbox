@@ -8,4 +8,5 @@ The repository contains different files and folders, organised in the following 
 * **instruments** contains definitions for all instruments that can be used during measurements. 
 * **Manual** is a PDF file containing detailed information about how to use this Toolbox.
 
-* The .gitignore file tells GitLab that certain files / folder should not be uploaded to this repository (such as personal configuration files) and can be ignored.*
+
+_The .gitignore file tells GitLab that certain files / folder should not be uploaded to this repository (such as personal configuration files) and can be ignored._
