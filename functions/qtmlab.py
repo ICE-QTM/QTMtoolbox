@@ -6,7 +6,7 @@ Available functions:
     move(device, variable, setpoint, rate)
     measure()
 
-Version 1.0 (2018-08-27)
+Version 1.4 (2018-10-11)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
