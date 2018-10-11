@@ -68,3 +68,13 @@ class ips120:
 
     def hold(self):
         self.visa.query('A 0')
+
+    def hON(self):
+        self.visa.query('H 1')
+
+    def hOFF(self):
+        self.visa.query('H 0')
+
+    def read_setp(self):
+        resp = float(self.visa.query('R 8').strip('R+').replace('+','').strip('\n').strip('\r'))
+        return resp
