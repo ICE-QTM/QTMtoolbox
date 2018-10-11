@@ -30,7 +30,7 @@ class Lake332:
         # Check if device is really a Lakeshore 332
         resp = self.visa.query('*IDN?')
         model = resp.split(',')[1]
-        if model != 'MODEL332S':
+        if model not in ['MODEL332S', 'MODEL331S']:
             raise WrongInstrErr('Expected LakeShore 332S, got {}'.format(resp))
 
     def get_iden(self):
