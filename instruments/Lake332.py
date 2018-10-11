@@ -9,6 +9,12 @@ Version 1.0 (2018-08-24)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
+
+Settings for the LakeShore controller (use <Interface> front button,
+then cycle through menu with <Enter>):
+- Baud rate:    9600
+- IEEE addr:    choose GPIB address
+- IEEE term:    Cr Lf
 """
 
 import visa
@@ -30,7 +36,7 @@ class Lake332:
         # Check if device is really a Lakeshore 332
         resp = self.visa.query('*IDN?')
         model = resp.split(',')[1]
-        if model != 'MODEL332S':
+        if model not in ['MODEL332S', 'MODEL331S']:
             raise WrongInstrErr('Expected LakeShore 332S, got {}'.format(resp))
 
     def get_iden(self):
