@@ -73,7 +73,7 @@ def getScope(filename, GPIBaddr=1):
     if not os.path.exists('ScopeData'):
         os.makedirs('ScopeData')
 
-    with open('ScopeData/' + filename + '.csv', 'w') as f:
+    with open('ScopeData/' + filename, 'w') as f:
         f.write('t1 (s), V1 (V), t2 (s), V2 (V)\n')
         for i in range(0, len(V2)):
             f.write(str(t1[i]) + ',' + str(V1[i]) + ',' +  str(t2[i]) + ',' + str(V2[i]) + '\n')
