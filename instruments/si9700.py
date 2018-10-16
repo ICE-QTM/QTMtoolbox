@@ -21,7 +21,7 @@ class WrongInstrErr(Exception):
     """
     pass
 
-class Lake332:
+class si9700:
     type = 'Scientific Instruments 9700 Temperature Controller'
 
     def __init__(self, GPIBaddr):
