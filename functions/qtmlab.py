@@ -49,7 +49,7 @@ def move(device, variable, setpoint, rate):
         if ratepm >= 0.4:
             ratepm = 0.4
         # Don't put rate to zero if move setpoint == current value
-        if ratepm == 0
+        if ratepm == 0:
             ratepm = 0.1
 
         write_rate = getattr(device, 'write_rate')
@@ -208,7 +208,7 @@ def record(dt, npoints, filename, md=None):
     # Perform record
     for i in range(npoints):
         data = measure()
-        datastr = (str(i*dt) + ', ' + np.array2str(data, separator=', ')[1:-1]).replace('\n', '')
+        datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ')[1:-1]).replace('\n', '')
         with open(filename, 'a') as file:
             file.write(datastr + '\n')
         time.sleep(dt)
