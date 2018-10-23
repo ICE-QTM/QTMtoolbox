@@ -47,17 +47,25 @@ class TekTDS3012C:
         resp = self.visa.query('MEASU:MEAS2:VAL?')
         resp = float(resp.split(' ')[1])
         return resp
-    
+
     def read_meas3(self):
         resp = self.visa.query('MEASU:MEAS3:VAL?')
         resp = float(resp.split(' ')[1])
         return resp
-    
+
     def read_meas4(self):
         resp = self.visa.query('MEASU:MEAS4:VAL?')
         resp = float(resp.split(' ')[1])
         return resp
-        
+
     def write_horzdiv(self, val):
         val = float(val)
         self.visa.write('HOR:MAI:SCA ' + str(val) + '\n')
+
+    def write_vertdiv1(self, val):
+        val = float(val)
+        self.visa.write('CH1:SCA ' + str(val) + '\n')
+
+    def write_vertdiv2(self, val):
+        val = float(val)
+        self.visa.write('CH2:SCA ' + str(val) + '\n')
