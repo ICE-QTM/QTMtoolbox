@@ -68,6 +68,9 @@ class ips120:
 
     def hold(self):
         self.visa.query('A 0')
+        
+    def clamp(self):
+        self.visa.query('A 4')
 
     def hON(self):
         self.visa.query('H 1')
