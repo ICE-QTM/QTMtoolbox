@@ -212,3 +212,56 @@ def record(dt, npoints, filename, md=None):
         with open(filename, 'a') as file:
             file.write(datastr + '\n')
         time.sleep(dt)
+
+def recordandplot(dt, npoints, filename, md=None):
+    """
+    The recordandplot command records and plots data with a time interval of
+    <dt> seconds. It will record and plot data for a number of <npoints> and
+    store it in <filename>.
+    """
+    import pyqtgraph as pg
+    
+     # Trick to make sure that dictionary loading is handled properly at startup
+    if md is None:
+        md = meas_dict
+
+    # Build header
+    header = 'time'
+    for dev in md:
+        header = header + ', ' + dev
+    # Write header to file
+    with open(filename, 'w') as file:
+        file.write(header + '\n')
+        
+    # Initialize plot
+    p = pg.plot()
+    p.enableAutoRange(y, enable)
+    p.showGrid(True, True)
+    curve = p.plot()
+    plotdata = []
+    
+    i = 0
+    def update():
+        nonlocal curve, plotdata, i
+        if i == npoints - 1:
+            timer.stop()
+            
+        # Plot stuff
+        latestData = measure()[0]
+        plotdata.append(latestData)
+        curve.setData(plotdata)
+        
+        # Write stuff
+        writedata = measure()
+        datastr = (str(i*dt) + ', ' + np.array2string(
+                writedata, separator=', ')[1:-1]).replace('\n', '')
+        with open(filename, 'a') as file:
+            file.write(datastr + '\n')
+
+        i += 1
+    
+    # Send a plot/write command every <dt> seconds
+    timer = pg.QtCore.QTimer()
+    timer.timeout.connect(update)
+    timer.start(dt * 1000)
+    
