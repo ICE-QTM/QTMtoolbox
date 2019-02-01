@@ -14,6 +14,7 @@ daan@daanwielens.com
 import time
 import numpy as np
 import os
+from tqdm import tqdm_gui
 
 meas_dict = {}
 
@@ -21,7 +22,10 @@ meas_dict = {}
 dt = 0.02           # Move timestep [s]
 dtw = 1             # Wait time before measurement [s]
 
+# TODO: add plot labels and such
+# TODO: support multiple devices/variables
 
+# TODO: test
 def move(device, variable, setpoint, rate):
     """
     The move command moves <variable> of <device> to <setpoint> at <rate>.
@@ -80,7 +84,7 @@ def move(device, variable, setpoint, rate):
     if nSteps != 0:
         # Create list of setpoints and change setpoint by looping through array
         move_curve = np.round(np.linspace(cur_val, setpoint, nSteps), 3)
-        for i in range(nSteps):
+        for i in tqdm_gui(range(nSteps)):
             write_command = getattr(device, 'write_' + variable)
             write_command(move_curve[i])
 
@@ -112,15 +116,12 @@ def measure(md=None):
         i += 1
 
     return data
-
-
-def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None, md=None):
-    """
-    The sweep command sweeps the <variable> of <device>, from <start> to <stop>.
-    Sweeping is done at <rate> and <npoints> are recorded to a datafile saved
-    as <filename>.
-    For measurements, the 'measurement dictionary', meas_dict, is used.
-    """
+            
+# TODO: test
+def sweep(device, variable, start, stop, rate, npoints, filename,
+                 plot=True, sweepdev=None, md=None):
+    import pyqtgraph as pg
+    
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
         md = meas_dict
@@ -140,28 +141,53 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
     # Write header to file
     with open(filename, 'w') as file:
         file.write(header + '\n')
-
+        
+    # TODO: this should show a plot!
     # Move to initial value
     move(device, variable, start, rate)
-
+    
     # Create sweep_curve
     sweep_curve = np.round(np.linspace(start, stop, npoints), 3)
-
-    # Perform sweep
-    for i in range(npoints):
-        # Move to measurement value
-        print('Sweeping to: {}'.format(sweep_curve[i]))
-        move(device, variable, sweep_curve[i], rate)
-        # Wait, then measure
-        time.sleep(dtw)
+    
+    if plot:
+        # Initialize plot
+        p = pg.plot()
+        p.showGrid(True, True)
+        curve = p.plot()
+        plotdata = []
+    
+    i = 0
+    def update():
+        nonlocal curve, plotdata, i
+        if i == npoints - 1:
+            timer.stop()
+        
+        # Measure first..
         print('Performing measurement.')
-        data = np.hstack((sweep_curve[i], measure()))
-
-        # Add data to file
+        data = np.hstack((sweep_curve[i], measure()))  
+        
+        if plot:
+            # Plot stuff
+            latestData = measure()[0]
+            plotdata.append(latestData)
+            curve.setData(plotdata)
+        
+        # Write stuff
         datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
         with open(filename, 'a') as file:
             file.write(datastr + '\n')
+    
+        # Move to measurement value
+        print('Sweeping to: {}'.format(sweep_curve[i]))
+        # TODO: maybe this should not show a progress thing
+        move(device, variable, sweep_curve[i], rate)
 
+        i += 1
+    
+    # Send a plot/write command every <dtw> seconds
+    timer = pg.QtCore.QTimer()
+    timer.timeout.connect(update)
+    timer.start(dtw * 1000)
 
 def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
     """
@@ -187,36 +213,10 @@ def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
         if t_stable >= tmin:
             stable = True
 
-
-def record(dt, npoints, filename, md=None):
+def record(dt, npoints, filename, plot=True, md=None, ):
     """
-    The record command records data with a time interval of <dt> seconds. It
-    will record data for a number of <npoints> and store it in <filename>.
-    """
-    # Trick to make sure that dictionary loading is handled properly at startup
-    if md is None:
-        md = meas_dict
-
-    # Build header
-    header = 'time'
-    for dev in md:
-        header = header + ', ' + dev
-    # Write header to file
-    with open(filename, 'w') as file:
-        file.write(header + '\n')
-
-    # Perform record
-    for i in range(npoints):
-        data = measure()
-        datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ')[1:-1]).replace('\n', '')
-        with open(filename, 'a') as file:
-            file.write(datastr + '\n')
-        time.sleep(dt)
-
-def recordandplot(dt, npoints, filename, md=None):
-    """
-    The recordandplot command records and plots data with a time interval of
-    <dt> seconds. It will record and plot data for a number of <npoints> and
+    The record command records (and by default, plots) data with a time
+    interval of <dt> seconds. It will record data for a number of <npoints> and
     store it in <filename>.
     """
     import pyqtgraph as pg
@@ -233,23 +233,24 @@ def recordandplot(dt, npoints, filename, md=None):
     with open(filename, 'w') as file:
         file.write(header + '\n')
         
-    # Initialize plot
-    p = pg.plot()
-    p.enableAutoRange(y, enable)
-    p.showGrid(True, True)
-    curve = p.plot()
-    plotdata = []
+    if plot:
+        # Initialize plot
+        p = pg.plot()
+        p.showGrid(True, True)
+        curve = p.plot()
+        plotdata = []
     
     i = 0
     def update():
         nonlocal curve, plotdata, i
         if i == npoints - 1:
             timer.stop()
-            
-        # Plot stuff
-        latestData = measure()[0]
-        plotdata.append(latestData)
-        curve.setData(plotdata)
+        
+        if plot:
+            # Plot stuff
+            latestData = measure()[0]
+            plotdata.append(latestData)
+            curve.setData(plotdata)
         
         # Write stuff
         writedata = measure()
