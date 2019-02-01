@@ -15,6 +15,7 @@ import time
 import numpy as np
 import os
 from tqdm import tqdm_gui
+from tqdm import tqdm
 
 meas_dict = {}
 
@@ -22,11 +23,10 @@ meas_dict = {}
 dt = 0.02           # Move timestep [s]
 dtw = 1             # Wait time before measurement [s]
 
-# TODO: add plot labels and such
 # TODO: support multiple devices/variables
 
-# TODO: test
-def move(device, variable, setpoint, rate):
+# TODO: show values while changing
+def move(device, variable, setpoint, rate, showprogress='console'):
     """
     The move command moves <variable> of <device> to <setpoint> at <rate>.
     Example: move(KeithBG, dcv, 10, 0.1)
@@ -71,20 +71,114 @@ def move(device, variable, setpoint, rate):
 
         return
     #---------------------------------------------------------------------------
-
-
     # Get current Value
     read_command = getattr(device, 'read_' + variable)
     cur_val = float(read_command())
-
+    
     # Determine number of steps
     Dt = abs(setpoint - cur_val) / rate
     nSteps = int(round(Dt / dt))
+    
+    if showprogress == 'gui':
+        progressbar = tqdm_gui(leave = False,
+                        unit = 'Hz',
+                        unit_scale = True,
+                        total = nSteps,)
+    elif showprogress == 'console':
+        progressbar = tqdm(total = nSteps,)
+    
+    
+
     # Only move when setpoint != curval, i.e. nSteps != 0
     if nSteps != 0:
         # Create list of setpoints and change setpoint by looping through array
-        move_curve = np.round(np.linspace(cur_val, setpoint, nSteps), 3)
-        for i in tqdm_gui(range(nSteps)):
+        move_curve = np.round(np.linspace(cur_val, setpoint, nSteps), 2)
+        for i in range(nSteps):
+            write_command = getattr(device, 'write_' + variable)
+            write_command(move_curve[i])
+
+            # Wait for device to reach setpoint before next move
+            reached = False
+            while not reached:
+                time.sleep(dt)
+                cur_val = float(read_command())
+                if round(cur_val, 2) == move_curve[i]:
+                    reached = True
+                    if showprogress == 'gui' or showprogress == 'console':
+                        progressbar.update()
+        if showprogress == 'gui' or showprogress == 'console':
+            progressbar.close()
+       
+             
+def moveOLD(device, variable, setpoint, rate, showprogress='console'):
+    """
+    The move command moves <variable> of <device> to <setpoint> at <rate>.
+    Example: move(KeithBG, dcv, 10, 0.1)
+
+    Note: a variable can only be moved if its instrument class has both
+    write_var and read_var modules.
+    """
+
+    # Oxford Magnet Controller - timing issue fix
+    """
+    For Oxford IPS120-10 Magnet Controllers, timing is a problem.
+    Sending and receiving data over GPIB takes a considerable amount
+    of time. We therefore change the magnet's rate and issue a single set
+    command. Then, we check every once in a while (100 ms delay) if it is
+    already at its setpoint.
+    """
+    #---------------------------------------------------------------------------
+    devtype = str(type(device))[1:-1].split('.')[-1].strip("'")
+    if devtype == 'ips120':
+        read_command = getattr(device, 'read_' + variable)
+        cur_val = float(read_command())
+
+        ratepm = round(rate * 60, 3)
+        if ratepm >= 0.4:
+            ratepm = 0.4
+        # Don't put rate to zero if move setpoint == current value
+        if ratepm == 0:
+            ratepm = 0.1
+
+        write_rate = getattr(device, 'write_rate')
+        write_rate(ratepm)
+
+        write_command = getattr(device, 'write_' + variable)
+        write_command(setpoint)
+
+        reached = False
+        while not reached:
+            time.sleep(0.1)
+            cur_val = float(read_command())
+            if round(cur_val, 2) == round(setpoint, 2):
+                reached = True
+
+        return
+    #---------------------------------------------------------------------------
+    # Get current Value
+    read_command = getattr(device, 'read_' + variable)
+    cur_val = float(read_command())
+    
+    # Determine number of steps
+    Dt = abs(setpoint - cur_val) / rate
+    nSteps = int(round(Dt / dt))
+    
+    if showprogress == 'gui':
+        iterator = tqdm_gui(range(nSteps),
+                        leave = False,
+                        unit = 'Hz',
+                        unit_scale = True)
+    elif showprogress == 'console':
+        iterator = tqdm(range(nSteps),
+                        unit = 'sweeps',)
+    else:
+        iterator = range(nSteps)
+
+    # Only move when setpoint != curval, i.e. nSteps != 0
+    if nSteps != 0:
+        # Create list of setpoints and change setpoint by looping through array
+        move_curve = np.round(np.linspace(cur_val, setpoint, nSteps), 2)
+        for i in iterator:
             write_command = getattr(device, 'write_' + variable)
             write_command(move_curve[i])
 
@@ -116,8 +210,8 @@ def measure(md=None):
         i += 1
 
     return data
-            
-# TODO: test
+
+# TODO: choose y variable
 def sweep(device, variable, start, stop, rate, npoints, filename,
                  plot=True, sweepdev=None, md=None):
     import pyqtgraph as pg
@@ -153,9 +247,15 @@ def sweep(device, variable, start, stop, rate, npoints, filename,
         # Initialize plot
         p = pg.plot()
         p.showGrid(True, True)
+        
         curve = p.plot()
         plotdata = []
-        plottime = []
+        plotsweep = []
+        # TODO: should be changed when adding support for multiple vars
+        for dev in md:
+            var = md.get(dev).get('var')
+        p.setLabel('left', text=var)
+        p.setLabel('bottom', 'sweepvar')
     
     i = 0
     def update():
@@ -170,9 +270,10 @@ def sweep(device, variable, start, stop, rate, npoints, filename,
         if plot:
             # Plot stuff
             latestData = measure()[0]
+
             plotdata.append(latestData)
-            plottime.append(i*dtw)
-            curve.setData(plottime, plotdata)
+            plotsweep.append(sweep_curve[i])
+            curve.setData(plotsweep, plotdata)
         
         # Write stuff
         datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
@@ -182,7 +283,7 @@ def sweep(device, variable, start, stop, rate, npoints, filename,
         # Move to measurement value
         print('Sweeping to: {}'.format(sweep_curve[i]))
         # TODO: maybe this should not show a progress thing
-        move(device, variable, sweep_curve[i], rate)
+        move(device, variable, sweep_curve[i], rate, 'none')
 
         i += 1
     
@@ -215,7 +316,7 @@ def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
         if t_stable >= tmin:
             stable = True
 
-def record(dt, npoints, filename, plot=True, md=None, ):
+def record(dt, npoints, filename, plot=True, md=None):
     """
     The record command records (and by default, plots) data with a time
     interval of <dt> seconds. It will record data for a number of <npoints> and
@@ -246,7 +347,7 @@ def record(dt, npoints, filename, plot=True, md=None, ):
         for dev in md:
             var = md.get(dev).get('var')
         p.setLabel('left', text=var)
-        p.setLabel('bottom', 'time')
+        p.setLabel('bottom', 'time (s)')
     
     i = 0
     def update():
