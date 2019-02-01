@@ -155,6 +155,7 @@ def sweep(device, variable, start, stop, rate, npoints, filename,
         p.showGrid(True, True)
         curve = p.plot()
         plotdata = []
+        plottime = []
     
     i = 0
     def update():
@@ -170,7 +171,8 @@ def sweep(device, variable, start, stop, rate, npoints, filename,
             # Plot stuff
             latestData = measure()[0]
             plotdata.append(latestData)
-            curve.setData(plotdata)
+            plottime.append(i*dtw)
+            curve.setData(plottime, plotdata)
         
         # Write stuff
         datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
@@ -239,6 +241,12 @@ def record(dt, npoints, filename, plot=True, md=None, ):
         p.showGrid(True, True)
         curve = p.plot()
         plotdata = []
+        plottime = []
+        # TODO: should be changed when adding support for multiple vars
+        for dev in md:
+            var = md.get(dev).get('var')
+        p.setLabel('left', text=var)
+        p.setLabel('bottom', 'time')
     
     i = 0
     def update():
@@ -250,7 +258,8 @@ def record(dt, npoints, filename, plot=True, md=None, ):
             # Plot stuff
             latestData = measure()[0]
             plotdata.append(latestData)
-            curve.setData(plotdata)
+            plottime.append(i*dt)
+            curve.setData(plottime, plotdata)
         
         # Write stuff
         writedata = measure()
