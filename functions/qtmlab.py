@@ -238,19 +238,21 @@ def record(dt, npoints, filename, plot=True, md=None):
 
     if plot:
         # Initialize plot
-        p = pg.plot()
-        p.showGrid(True, True)
 
         plottime = []
         plotdata = list(range(len(md)))
         curve = list(range(len(md)))
+        p = list(range(len(md)))
 
         n = 0
         for devvar in md:
+            p[n] = pg.plot()
+            p[n].showGrid(True, True)
+
             varname = md.get(devvar).get('var')
-            p.setLabel('left', text=varname)  # TODO: fix this, won't work
-            p.setLabel('bottom', 'time (s)')
-            curve[n] = p.plot()
+            p[n].setLabel('left', text=varname)  # TODO: fix this, won't work
+            p[n].setLabel('bottom', 'time (s)')
+            curve[n] = p[n].plot()
             plotdata[n] = []
             n += 1
 
@@ -270,69 +272,6 @@ def record(dt, npoints, filename, plot=True, md=None):
                 plotdata[j].append(latestData[j])
                 curve[j].setData(plottime, plotdata[j])
                 j += 1
-
-        # Write stuff
-        writedata = measure()
-        datastr = (str(i*dt) + ', ' + np.array2string(
-                writedata, separator=', ')[1:-1]).replace('\n', '')
-        with open(filename, 'a') as file:
-            file.write(datastr + '\n')
-
-        i += 1
-
-    # Send a plot/write command every <dt> seconds
-    timer = pg.QtCore.QTimer()
-    timer.timeout.connect(update)
-    timer.start(dt * 1000)
-
-
-# no support for multiple devices / variables
-def recordOLD(dt, npoints, filename, plot=True, md=None):
-    """
-    The record command records (and by default, plots) data with a time
-    interval of <dt> seconds. It will record data for a number of <npoints> and
-    store it in <filename>.
-    """
-    import pyqtgraph as pg
-
-    # Trick to make sure that dictionary loading is handled properly at startup
-    if md is None:
-        md = meas_dict
-
-    # Build header
-    header = 'time'
-    for dev in md:
-        header = header + ', ' + dev
-    # Write header to file
-    with open(filename, 'w') as file:
-        file.write(header + '\n')
-
-    if plot:
-        # Initialize plot
-        p = pg.plot()
-        p.showGrid(True, True)
-        curve = p.plot()
-        plotdata = []
-        plottime = []
-        # TODO: should be changed when adding support for multiple vars
-        for dev in md:
-            var = md.get(dev).get('var')
-        p.setLabel('left', text=var)
-        p.setLabel('bottom', 'time (s)')
-
-    i = 0
-
-    def update():
-        nonlocal curve, plotdata, i
-        if i == npoints - 1:
-            timer.stop()
-
-        if plot:
-            # Plot stuff
-            latestData = measure()[0]
-            plotdata.append(latestData)
-            plottime.append(i*dt)
-            curve.setData(plottime, plotdata)
 
         # Write stuff
         writedata = measure()
