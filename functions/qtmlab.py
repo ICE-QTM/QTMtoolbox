@@ -215,32 +215,79 @@ def sweep(device, variable, start, stop, rate, npoints, filename,
     timer.start(dtw * 1000)
 
 
-def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
-    """
-    The waitfor command waits until <variable> of <device> reached
-    <setpoint> within +/- <threshold> for at least <tmin>.
-    Note: <tmin> is in seconds.
-    """
-    stable = False
-    t_stable = 0
-    while not stable:
-        # Read value
-        read_command = getattr(device, 'read_' + variable)
-        cur_val = float(read_command())
-        # Determine if value within threshold
-        if abs(cur_val - setpoint) <= threshold:
-            # Add time to counter
-            t_stable += 10
-        else:
-            # Reset counter
-            t_stable = 0
-        time.sleep(10)
-        # Check if t_stable > tmin
-        if t_stable >= tmin:
-            stable = True
-
-
+# supports multiple variables, but some features still missing
 def record(dt, npoints, filename, plot=True, md=None):
+    """
+    The record command records (and by default, plots) data with a time
+    interval of <dt> seconds. It will record data for a number of <npoints> and
+    store it in <filename>.
+    """
+    import pyqtgraph as pg
+
+    # Trick to make sure that dictionary loading is handled properly at startup
+    if md is None:
+        md = meas_dict
+
+    # Build header
+    header = 'time'
+    for devvar in md:
+        header = header + ', ' + devvar
+    # Write header to file
+    with open(filename, 'w') as file:
+        file.write(header + '\n')
+
+    if plot:
+        # Initialize plot
+        p = pg.plot()
+        p.showGrid(True, True)
+
+        plottime = []
+        plotdata = list(range(len(md)))
+        curve = list(range(len(md)))
+
+        n = 0
+        for devvar in md:
+            varname = md.get(devvar).get('var')
+            p.setLabel('left', text=varname)  # TODO: fix this, won't work
+            p.setLabel('bottom', 'time (s)')
+            curve[n] = p.plot()
+            plotdata[n] = []
+            n += 1
+
+    i = 0
+
+    def update():
+        nonlocal curve, plotdata, i
+        if i == npoints - 1:
+            timer.stop()
+
+        if plot:
+            # Plot stuff
+            plottime.append(i*dt)
+            latestData = measure()
+            j = 0
+            for devvar in md:
+                plotdata[j].append(latestData[j])
+                curve[j].setData(plottime, plotdata[j])
+                j += 1
+
+        # Write stuff
+        writedata = measure()
+        datastr = (str(i*dt) + ', ' + np.array2string(
+                writedata, separator=', ')[1:-1]).replace('\n', '')
+        with open(filename, 'a') as file:
+            file.write(datastr + '\n')
+
+        i += 1
+
+    # Send a plot/write command every <dt> seconds
+    timer = pg.QtCore.QTimer()
+    timer.timeout.connect(update)
+    timer.start(dt * 1000)
+
+
+# no support for multiple devices / variables
+def recordOLD(dt, npoints, filename, plot=True, md=None):
     """
     The record command records (and by default, plots) data with a time
     interval of <dt> seconds. It will record data for a number of <npoints> and
@@ -300,3 +347,28 @@ def record(dt, npoints, filename, plot=True, md=None):
     timer = pg.QtCore.QTimer()
     timer.timeout.connect(update)
     timer.start(dt * 1000)
+
+
+def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
+    """
+    The waitfor command waits until <variable> of <device> reached
+    <setpoint> within +/- <threshold> for at least <tmin>.
+    Note: <tmin> is in seconds.
+    """
+    stable = False
+    t_stable = 0
+    while not stable:
+        # Read value
+        read_command = getattr(device, 'read_' + variable)
+        cur_val = float(read_command())
+        # Determine if value within threshold
+        if abs(cur_val - setpoint) <= threshold:
+            # Add time to counter
+            t_stable += 10
+        else:
+            # Reset counter
+            t_stable = 0
+        time.sleep(10)
+        # Check if t_stable > tmin
+        if t_stable >= tmin:
+            stable = True
