@@ -23,7 +23,6 @@ meas_dict = {}
 dt = 0.02           # Move timestep [s]
 dtw = 1             # Wait time before measurement [s]
 
-# TODO: support multiple devices/variables
 
 # TODO: show values while changing
 def move(device, variable, setpoint, rate, showprogress='console'):
@@ -43,7 +42,7 @@ def move(device, variable, setpoint, rate, showprogress='console'):
     command. Then, we check every once in a while (100 ms delay) if it is
     already at its setpoint.
     """
-    #---------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     devtype = str(type(device))[1:-1].split('.')[-1].strip("'")
     if devtype == 'ips120':
         read_command = getattr(device, 'read_' + variable)
@@ -70,24 +69,22 @@ def move(device, variable, setpoint, rate, showprogress='console'):
                 reached = True
 
         return
-    #---------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # Get current Value
     read_command = getattr(device, 'read_' + variable)
     cur_val = float(read_command())
-    
+
     # Determine number of steps
     Dt = abs(setpoint - cur_val) / rate
     nSteps = int(round(Dt / dt))
-    
+
     if showprogress == 'gui':
-        progressbar = tqdm_gui(leave = False,
-                        unit = 'Hz',
-                        unit_scale = True,
-                        total = nSteps,)
+        progressbar = tqdm_gui(leave=False,
+                               unit='Hz',
+                               unit_scale=True,
+                               total=nSteps,)
     elif showprogress == 'console':
-        progressbar = tqdm(total = nSteps,)
-    
-    
+        progressbar = tqdm(total=nSteps,)
 
     # Only move when setpoint != curval, i.e. nSteps != 0
     if nSteps != 0:
@@ -108,8 +105,8 @@ def move(device, variable, setpoint, rate, showprogress='console'):
                         progressbar.update()
         if showprogress == 'gui' or showprogress == 'console':
             progressbar.close()
-       
-             
+
+
 def moveOLD(device, variable, setpoint, rate, showprogress='console'):
     """
     The move command moves <variable> of <device> to <setpoint> at <rate>.
@@ -127,7 +124,7 @@ def moveOLD(device, variable, setpoint, rate, showprogress='console'):
     command. Then, we check every once in a while (100 ms delay) if it is
     already at its setpoint.
     """
-    #---------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     devtype = str(type(device))[1:-1].split('.')[-1].strip("'")
     if devtype == 'ips120':
         read_command = getattr(device, 'read_' + variable)
@@ -154,23 +151,23 @@ def moveOLD(device, variable, setpoint, rate, showprogress='console'):
                 reached = True
 
         return
-    #---------------------------------------------------------------------------
+    #  ------------------------------------------------------------------------
     # Get current Value
     read_command = getattr(device, 'read_' + variable)
     cur_val = float(read_command())
-    
+
     # Determine number of steps
     Dt = abs(setpoint - cur_val) / rate
     nSteps = int(round(Dt / dt))
-    
+
     if showprogress == 'gui':
         iterator = tqdm_gui(range(nSteps),
-                        leave = False,
-                        unit = 'Hz',
-                        unit_scale = True)
+                            leave=False,
+                            unit='Hz',
+                            unit_scale=True)
     elif showprogress == 'console':
         iterator = tqdm(range(nSteps),
-                        unit = 'sweeps',)
+                        unit='sweeps',)
     else:
         iterator = range(nSteps)
 
@@ -211,11 +208,12 @@ def measure(md=None):
 
     return data
 
+
 # TODO: choose y variable
 def sweep(device, variable, start, stop, rate, npoints, filename,
-                 plot=True, sweepdev=None, md=None):
+          plot=True, sweepdev=None, md=None):
     import pyqtgraph as pg
-    
+
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
         md = meas_dict
@@ -235,62 +233,68 @@ def sweep(device, variable, start, stop, rate, npoints, filename,
     # Write header to file
     with open(filename, 'w') as file:
         file.write(header + '\n')
-        
-    # TODO: this should show a plot!
+
     # Move to initial value
     move(device, variable, start, rate)
-    
+
     # Create sweep_curve
     sweep_curve = np.round(np.linspace(start, stop, npoints), 3)
-    
+
     if plot:
         # Initialize plot
         p = pg.plot()
         p.showGrid(True, True)
-        
-        curve = p.plot()
+
+        var = []
+        curve = []
         plotdata = []
+        for devvar in md:
+            var.append(md.get(devvar).get('var'))
+            curve.append(p.plot())
+            plotdata.append([])
+
         plotsweep = []
         # TODO: should be changed when adding support for multiple vars
-        for dev in md:
-            var = md.get(dev).get('var')
-        p.setLabel('left', text=var)
+        # for dev in md:
+        # var = md.get(dev).get('var')
+        p.setLabel('left', text='y axis')
         p.setLabel('bottom', 'sweepvar')
-    
+
     i = 0
+
     def update():
         nonlocal curve, plotdata, i
         if i == npoints - 1:
             timer.stop()
-        
+
         # Measure first..
         print('Performing measurement.')
-        data = np.hstack((sweep_curve[i], measure()))  
-        
+        data = np.hstack((sweep_curve[i], measure()))
+
         if plot:
             # Plot stuff
-            latestData = measure()[0]
-
-            plotdata.append(latestData)
             plotsweep.append(sweep_curve[i])
-            curve.setData(plotsweep, plotdata)
-        
+            for i in range(len(var)):
+                plotdata[i].append(measure()[i])
+                curve[i].setData(plotsweep, plotdata)
+
         # Write stuff
-        datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
+        datastr = np.array2string(data, separator=', ')[1:-1].replace('\n', '')
         with open(filename, 'a') as file:
             file.write(datastr + '\n')
-    
+
         # Move to measurement value
         print('Sweeping to: {}'.format(sweep_curve[i]))
         # TODO: maybe this should not show a progress thing
         move(device, variable, sweep_curve[i], rate, 'none')
 
         i += 1
-    
+
     # Send a plot/write command every <dtw> seconds
     timer = pg.QtCore.QTimer()
     timer.timeout.connect(update)
     timer.start(dtw * 1000)
+
 
 def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
     """
@@ -316,6 +320,7 @@ def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
         if t_stable >= tmin:
             stable = True
 
+
 def record(dt, npoints, filename, plot=True, md=None):
     """
     The record command records (and by default, plots) data with a time
@@ -323,8 +328,8 @@ def record(dt, npoints, filename, plot=True, md=None):
     store it in <filename>.
     """
     import pyqtgraph as pg
-    
-     # Trick to make sure that dictionary loading is handled properly at startup
+
+    # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
         md = meas_dict
 
@@ -335,7 +340,7 @@ def record(dt, npoints, filename, plot=True, md=None):
     # Write header to file
     with open(filename, 'w') as file:
         file.write(header + '\n')
-        
+
     if plot:
         # Initialize plot
         p = pg.plot()
@@ -348,20 +353,21 @@ def record(dt, npoints, filename, plot=True, md=None):
             var = md.get(dev).get('var')
         p.setLabel('left', text=var)
         p.setLabel('bottom', 'time (s)')
-    
+
     i = 0
+
     def update():
         nonlocal curve, plotdata, i
         if i == npoints - 1:
             timer.stop()
-        
+
         if plot:
             # Plot stuff
             latestData = measure()[0]
             plotdata.append(latestData)
             plottime.append(i*dt)
             curve.setData(plottime, plotdata)
-        
+
         # Write stuff
         writedata = measure()
         datastr = (str(i*dt) + ', ' + np.array2string(
@@ -370,9 +376,8 @@ def record(dt, npoints, filename, plot=True, md=None):
             file.write(datastr + '\n')
 
         i += 1
-    
+
     # Send a plot/write command every <dt> seconds
     timer = pg.QtCore.QTimer()
     timer.timeout.connect(update)
     timer.start(dt * 1000)
-    
