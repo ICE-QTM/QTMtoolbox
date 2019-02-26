@@ -128,7 +128,6 @@ def measure(md=None):
     return data
 
 
-# TODO: choose y variable
 def sweep(device, variable, start, stop, rate, npoints, filename,
           plot=True, sweepdev=None, md=None):
     import pyqtgraph as pg
@@ -161,23 +160,23 @@ def sweep(device, variable, start, stop, rate, npoints, filename,
 
     if plot:
         # Initialize plot
-        p = pg.plot()
-        p.showGrid(True, True)
-
-        var = []
-        curve = []
-        plotdata = []
-        for devvar in md:
-            var.append(md.get(devvar).get('var'))
-            curve.append(p.plot())
-            plotdata.append([])
 
         plotsweep = []
-        # TODO: should be changed when adding support for multiple vars
-        # for dev in md:
-        # var = md.get(dev).get('var')
-        p.setLabel('left', text='y axis')
-        p.setLabel('bottom', 'sweepvar')
+        plotdata = list(range(len(md)))
+        curve = list(range(len(md)))
+        p = list(range(len(md)))
+
+        n = 0
+        for devvar in md:
+            p[n] = pg.plot()
+            p[n].showGrid(True, True)
+
+            varname = md.get(devvar).get('var')
+            p[n].setLabel('left', text=varname)
+            p[n].setLabel('bottom', text=sweepdev)
+            curve[n] = p[n].plot()
+            plotdata[n] = []
+            n += 1
 
     i = 0
 
@@ -193,9 +192,94 @@ def sweep(device, variable, start, stop, rate, npoints, filename,
         if plot:
             # Plot stuff
             plotsweep.append(sweep_curve[i])
-            for i in range(len(var)):
-                plotdata[i].append(measure()[i])
-                curve[i].setData(plotsweep, plotdata)
+            latestData = measure()
+            j = 0
+            for devvar in md:
+                plotdata[j].append(latestData[j])
+                curve[j].setData(plotsweep, plotdata[j])
+                j += 1
+
+        # Write stuff
+        datastr = np.array2string(data, separator=', ')[1:-1].replace('\n', '')
+        with open(filename, 'a') as file:
+            file.write(datastr + '\n')
+
+        # Move to measurement value
+        print('Sweeping to: {}'.format(sweep_curve[i]))
+        move(device, variable, sweep_curve[i], rate, 'none')
+
+        i += 1
+
+    # Send a plot/write command every <dtw> seconds
+    timer = pg.QtCore.QTimer()
+    timer.timeout.connect(update)
+    timer.start(dtw * 1000)
+
+
+# this one definitely works correctly, but supports one var
+def sweepOLD(device, variable, start, stop, rate, npoints, filename,
+             plot=True, sweepdev=None, md=None):
+    import pyqtgraph as pg
+
+    # Trick to make sure that dictionary loading is handled properly at startup
+    if md is None:
+        md = meas_dict
+
+    # Initialise datafile and write header
+    while os.path.isfile(filename):
+        print('The file already exists. Appending "_1" to the filename.')
+        filename = filename.split('.')
+        filename = filename[0] + '_1.' + filename[1]
+    # Get specified variable name, or use default
+    if sweepdev is None:
+        sweepdev = 'sweepdev'
+    header = sweepdev
+    # Add device of 'meas_list'
+    for dev in md:
+        header = header + ', ' + dev
+    # Write header to file
+    with open(filename, 'w') as file:
+        file.write(header + '\n')
+
+    # TODO: this should show a plot!
+    # Move to initial value
+    move(device, variable, start, rate)
+
+    # Create sweep_curve
+    sweep_curve = np.round(np.linspace(start, stop, npoints), 3)
+
+    if plot:
+        # Initialize plot
+        p = pg.plot()
+        p.showGrid(True, True)
+
+        curve = p.plot()
+        plotdata = []
+        plotsweep = []
+        # TODO: should be changed when adding support for multiple vars
+        for dev in md:
+            var = md.get(dev).get('var')
+        p.setLabel('left', text=var)
+        p.setLabel('bottom', 'sweepvar')
+
+    i = 0
+
+    def update():
+        nonlocal curve, plotdata, i
+        if i == npoints - 1:
+            timer.stop()
+
+        # Measure first..
+        print('Performing measurement.')
+        data = np.hstack((sweep_curve[i], measure()))
+
+        if plot:
+            # Plot stuff
+            latestData = measure()[0]
+
+            plotdata.append(latestData)
+            plotsweep.append(sweep_curve[i])
+            curve.setData(plotsweep, plotdata)
 
         # Write stuff
         datastr = np.array2string(data, separator=', ')[1:-1].replace('\n', '')
@@ -215,7 +299,6 @@ def sweep(device, variable, start, stop, rate, npoints, filename,
     timer.start(dtw * 1000)
 
 
-# supports multiple variables, but some features still missing
 def record(dt, npoints, filename, plot=True, md=None):
     """
     The record command records (and by default, plots) data with a time
@@ -250,7 +333,7 @@ def record(dt, npoints, filename, plot=True, md=None):
             p[n].showGrid(True, True)
 
             varname = md.get(devvar).get('var')
-            p[n].setLabel('left', text=varname)  # TODO: fix this, won't work
+            p[n].setLabel('left', text=varname)
             p[n].setLabel('bottom', 'time (s)')
             curve[n] = p[n].plot()
             plotdata[n] = []
