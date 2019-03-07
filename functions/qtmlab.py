@@ -75,7 +75,7 @@ def move(device, variable, setpoint, rate):
     read_command = getattr(device, 'read_' + variable)
     cur_val = float(read_command())
     
-    #Check sweeo durection
+    #Check sweep direction
     if cur_val > setpoint:
         direction = 'down'
     else:
@@ -98,7 +98,7 @@ def move(device, variable, setpoint, rate):
                 time.sleep(dt)
                 cur_val = float(read_command())
                 #If the current value matches the desired value at this step we move on
-                if round(cur_val, 2) == move_curve[i]:
+                if round(cur_val, 2) == round(move_curve[i],2):
                     reached = True
                 #The machine may move beyond the desired value at this step. In this case we move on as well
                 elif (round(cur_val,2) > round(move_curve[i],2)) and direction == 'up':
