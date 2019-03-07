@@ -5,8 +5,9 @@ Functions that can be used in measurements within the QTMlab framework.
 Available functions:
     move(device, variable, setpoint, rate)
     measure()
+    sweep(device, variable, start, stop, rate, npoints, filename)
 
-Version 1.4 (2018-10-11)
+Version 1.41 (2019-03-07)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -14,6 +15,7 @@ daan@daanwielens.com
 import time
 import numpy as np
 import os
+import math
 
 meas_dict = {}
 
@@ -72,6 +74,12 @@ def move(device, variable, setpoint, rate):
     # Get current Value
     read_command = getattr(device, 'read_' + variable)
     cur_val = float(read_command())
+    
+    #Check sweeo durection
+    if cur_val > setpoint:
+        direction = 'down'
+    else:
+        direction = 'up'
 
     # Determine number of steps
     Dt = abs(setpoint - cur_val) / rate
@@ -89,8 +97,17 @@ def move(device, variable, setpoint, rate):
             while not reached:
                 time.sleep(dt)
                 cur_val = float(read_command())
+                #If the current value matches the desired value at this step we move on
                 if round(cur_val, 2) == move_curve[i]:
                     reached = True
+                #The machine may move beyond the desired value at this step. In this case we move on as well
+                elif (round(cur_val,2) > round(move_curve[i],2)) and direction == 'up':
+                     reached = True
+                elif (round(cur_val,2) < round(move_curve[i],2)) and direction == 'down':
+                     reached = True
+                #Rounding errors around the decimal 5 are caught here by comparing only the first two decimals
+                elif math.floor(100*cur_val) == math.floor(100*move_curve[i]):
+                     reached = True
 
 
 def measure(md=None):
