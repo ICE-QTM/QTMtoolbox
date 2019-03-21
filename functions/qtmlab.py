@@ -141,6 +141,8 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
     as <filename>.
     For measurements, the 'measurement dictionary', meas_dict, is used.
     """
+    print('Starting a sweep of ' + device.__name__ + '.' + variable + ' from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' steps with rate ' + str(rate) + '.')
+
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
         md = meas_dict
@@ -197,6 +199,7 @@ def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
     <setpoint> within +/- <threshold> for at least <tmin>.
     Note: <tmin> is in seconds.
     """
+    print('Waiting for ' + device.__name__ + ' to be within ' + str(setpoint) + ' +/- ' + str(threshold) + ' for at least ' + str(tmin) ' seconds.')
     stable = False
     t_stable = 0
     while not stable:
@@ -214,6 +217,7 @@ def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
         # Check if t_stable > tmin
         if t_stable >= tmin:
             stable = True
+            print('The device is stable.')
 
 def record(dt, npoints, filename, md=None):
     """
@@ -226,7 +230,7 @@ def record(dt, npoints, filename, md=None):
 
     # Make sure that the datafile is stored in the 'Data' folder
     filename = 'Data/' + filename
-    
+
     # Initialise datafile
     append_no = 0;
     while os.path.isfile(filename):
