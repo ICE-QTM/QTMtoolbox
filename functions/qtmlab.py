@@ -225,6 +225,7 @@ def record(dt, npoints, filename, md=None):
     The record command records data with a time interval of <dt> seconds. It
     will record data for a number of <npoints> and store it in <filename>.
     """
+    print('Recording data with a time interval of ' + str(dt) + ' seconds for (up to) ' + str(npoints) + ' points. Hit <Ctrl+C> to abort.')
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
         md = meas_dict
@@ -253,6 +254,7 @@ def record(dt, npoints, filename, md=None):
 
     # Perform record
     for i in range(npoints):
+        print('Performing measurement at t = ' + str(i*dt) + ' s.')
         data = measure()
         datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ')[1:-1]).replace('\n', '')
         with open(filename, 'a') as file:
