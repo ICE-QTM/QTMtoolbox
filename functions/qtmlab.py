@@ -183,8 +183,9 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
         print('Sweeping to: {}'.format(sweep_curve[i]))
         move(device, variable, sweep_curve[i], rate)
         # Wait, then measure
+        print('   Waiting for measurement...')
         time.sleep(dtw)
-        print('Performing measurement.')
+        print('   Performing measurement.')
         data = np.hstack((sweep_curve[i], measure()))
 
         # Add data to file
