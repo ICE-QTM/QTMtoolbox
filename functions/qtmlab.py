@@ -158,7 +158,7 @@ def measure(md=None):
     return data
 
 
-def sweep(device, variable, start, stop, rate, npoints, filename, plot=True, plotlist = 'all', sweepdev=None, md=None):
+def sweep(device, variable, start, stop, rate, npoints, filename, plot=True, plotlist=None, sweepdev=None, md=None):
     """
     The sweep command sweeps the <variable> of <device>, from <start> to <stop>.
     Sweeping is done at <rate> and <npoints> are recorded to a datafile saved
@@ -203,6 +203,13 @@ def sweep(device, variable, start, stop, rate, npoints, filename, plot=True, plo
     # Create sweep_curve
     sweep_curve = np.round(np.linspace(start, stop, npoints), 3)
     
+    # Initialize plotlist if none given
+    if plotlist is None:
+        plotlist = []
+        for devvar in md:
+            plotlist.append(md.get(devvar).get('var'))
+            print(plotlist)    
+    
     # Initialize plot
     if plot:
         plotsweep = []
@@ -211,17 +218,16 @@ def sweep(device, variable, start, stop, rate, npoints, filename, plot=True, plo
         p = list(range(len(md)))
 
         n = 0
-        for devvar in md:
+        for var in plotlist:
             p[n] = pg.plot()
             p[n].showGrid(True, True)
 
-            varname = md.get(devvar).get('var')
-            p[n].setLabel('left', text=varname)
+            p[n].setLabel('left', text=var)
             p[n].setLabel('bottom', text=sweepdev)
             curve[n] = p[n].plot()
             plotdata[n] = []
             n += 1
-
+            
     # Perform sweep
     i = 0
     def update():
@@ -231,7 +237,7 @@ def sweep(device, variable, start, stop, rate, npoints, filename, plot=True, plo
 
         # Make sure we move first before measuring.
         # Has to be done this way as waiting is done at the end.
-        if i == 0:
+        if i != 0:
             # Measure first..
             print('   Performing measurement.')
             data = np.hstack((sweep_curve[i], measure()))
@@ -240,8 +246,9 @@ def sweep(device, variable, start, stop, rate, npoints, filename, plot=True, plo
                 # Plot stuff
                 plotsweep.append(sweep_curve[i])
                 latestData = measure()
+    
                 j = 0
-                for devvar in md:
+                for var in plotlist:
                     plotdata[j].append(latestData[j])
                     curve[j].setData(plotsweep, plotdata[j])
                     j += 1
@@ -251,12 +258,13 @@ def sweep(device, variable, start, stop, rate, npoints, filename, plot=True, plo
             with open(filename, 'a') as file:
                 file.write(datastr + '\n')
 
-        # Move to measurement value
-        print('Sweeping to: {}'.format(sweep_curve[i]))
-        move(device, variable, sweep_curve[i], rate, showprogress='none')
-        
-        # Print that we're waiting
-        print('   Waiting for measurement...')
+        if i != npoints:
+            # Move to measurement value
+            print('Sweeping to: {}'.format(sweep_curve[i]))
+            move(device, variable, sweep_curve[i], rate, showprogress='none')
+            
+            # Print that we're waiting
+            print('   Waiting for measurement...')
 
         i += 1
 
@@ -329,13 +337,14 @@ def record(dt, npoints, filename, plot=True, plotlist=None, md=None):
     with open(filename, 'w') as file:
         file.write(header + '\n')
     
+    # Initialize plotlist if none given
     if plotlist is None:
         plotlist = []
         for devvar in md:
             plotlist.append(md.get(devvar).get('var'))
             print(plotlist)
     
-    # Initialize plot(list)
+    # Initialize plot
     if plot:
         plottime = []
         plotdata = list(range(len(plotlist)))
@@ -352,31 +361,7 @@ def record(dt, npoints, filename, plot=True, plotlist=None, md=None):
             p[n].setLabel('bottom', 'time (s)')
             curve[n] = p[n].plot()
             plotdata[n] = []
-            n += 1
-
-    # Initialize plot
-#    if plot:
-#        plottime = []
-#        plotdata = list(range(len(md)))
-#        curve = list(range(len(md)))
-#        p = list(range(len(md)))
-#
-#        n = 0
-#        for devvar in md:
-#            varname = md.get(devvar).get('var')
-##            plotlist_index = []
-##            if varname in plotlist:
-##                plotlist_index.append(n)
-#            p[n] = pg.plot()
-#            p[n].showGrid(True, True)
-#        
-#            p[n].setLabel('left', text=varname)
-#            p[n].setLabel('bottom', 'time (s)')
-#            curve[n] = p[n].plot()
-#            plotdata[n] = []
-#            n += 1
-            
-            
+            n += 1                        
 
     # Perform record
     i = 0
@@ -391,11 +376,6 @@ def record(dt, npoints, filename, plot=True, plotlist=None, md=None):
         if plot:
             plottime.append(i*dt)
             latestData = measure()
-#            j = 0
-#            for devvar in md:
-#                plotdata[j].append(latestData[j])
-#                curve[j].setData(plottime, plotdata[j])
-#                j += 1
                 
             j = 0
             for var in plotlist:
