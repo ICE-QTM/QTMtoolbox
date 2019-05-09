@@ -16,6 +16,7 @@ import time
 import numpy as np
 import os
 import math
+import pyqtgraph as pg
 
 from tqdm import tqdm_gui
 from tqdm import tqdm
@@ -164,9 +165,7 @@ def sweep(device, variable, start, stop, rate, npoints, filename, plot=True, plo
     Sweeping is done at <rate> and <npoints> are recorded to a datafile saved
     as <filename>.
     For measurements, the 'measurement dictionary', meas_dict, is used.
-    """
-    import pyqtgraph as pg
-    
+    """    
     print('Starting a sweep of "' + variable + '" from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' steps with rate ' + str(rate) + '.')
 
     # Trick to make sure that dictionary loading is handled properly at startup
@@ -208,30 +207,34 @@ def sweep(device, variable, start, stop, rate, npoints, filename, plot=True, plo
         plotlist = []
         for devvar in md:
             plotlist.append(md.get(devvar).get('var'))
-            print(plotlist)    
     
     # Initialize plot
     if plot:
         plotsweep = []
         plotdata = list(range(len(md)))
         curve = list(range(len(md)))
-        p = list(range(len(md)))
+        pw = list(range(len(md)))
 
         n = 0
         for var in plotlist:
-            p[n] = pg.plot()
-            p[n].showGrid(True, True)
-
-            p[n].setLabel('left', text=var)
-            p[n].setLabel('bottom', text=sweepdev)
-            curve[n] = p[n].plot()
+            pw[n] = pg.PlotWidget()
+            
+            pw[n].showGrid(True, True)
+            pw[n].setLabel('left', text=var)
+            pw[n].setLabel('bottom', text=sweepdev)
+            
+            curve[n] = pw[n].plot()
+            pw[n].show()
+            pw[n].setWindowTitle(var)
+            
             plotdata[n] = []
+            
             n += 1
             
     # Perform sweep
     i = 0
     def update():
-        nonlocal curve, plotdata, i
+        nonlocal pw, curve, plotdata, i
         if i == npoints - 1:
             timer.stop()
 
@@ -307,8 +310,6 @@ def record(dt, npoints, filename, plot=True, plotlist=None, md=None):
     interval of <dt> seconds. It will record data for a number of <npoints> and
     store it in <filename>.
     """
-    import pyqtgraph as pg
-    
     print('Recording data with a time interval of ' + str(dt) + ' seconds for (up to) ' + str(npoints) + ' points. Hit <Ctrl+C> to abort.')
    
     # Trick to make sure that dictionary loading is handled properly at startup
@@ -342,31 +343,34 @@ def record(dt, npoints, filename, plot=True, plotlist=None, md=None):
         plotlist = []
         for devvar in md:
             plotlist.append(md.get(devvar).get('var'))
-            print(plotlist)
     
     # Initialize plot
     if plot:
         plottime = []
         plotdata = list(range(len(plotlist)))
         curve = list(range(len(plotlist)))
-        p = list(range(len(plotlist)))
+        pw = list(range(len(plotlist)))
         
         n = 0
-        for var in plotlist:
-
-            p[n] = pg.plot()
-            p[n].showGrid(True, True)
-        
-            p[n].setLabel('left', text=var)
-            p[n].setLabel('bottom', 'time (s)')
-            curve[n] = p[n].plot()
+        for var in plotlist:            
+            pw[n] = pg.PlotWidget()
+            
+            pw[n].showGrid(True, True)
+            pw[n].setLabel('left', text=var)
+            pw[n].setLabel('bottom', 'time (s)')
+            
+            curve[n] = pw[n].plot()
+            pw[n].show()
+            pw[n].setWindowTitle(var)
+            
             plotdata[n] = []
+            
             n += 1                        
 
     # Perform record
     i = 0
     def update():
-        nonlocal curve, plotdata, i
+        nonlocal pw, curve, plotdata, i
         if i == npoints - 1:
             timer.stop()
             
@@ -396,3 +400,4 @@ def record(dt, npoints, filename, plot=True, plotlist=None, md=None):
     timer = pg.QtCore.QTimer()
     timer.timeout.connect(update)
     timer.start(dt * 1000)
+    
