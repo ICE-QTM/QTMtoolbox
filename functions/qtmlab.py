@@ -204,9 +204,7 @@ def sweep(device, variable, start, stop, rate, npoints, filename, plot=True, plo
     
     # Initialize plotlist if none given
     if plotlist is None:
-        plotlist = []
-        for devvar in md:
-            plotlist.append(md.get(devvar).get('var'))
+        plotlist = list(md.keys())
     
     # Initialize plot
     if plot:
@@ -216,16 +214,16 @@ def sweep(device, variable, start, stop, rate, npoints, filename, plot=True, plo
         pw = list(range(len(md)))
 
         n = 0
-        for var in plotlist:
+        for key in plotlist:
             pw[n] = pg.PlotWidget()
             
             pw[n].showGrid(True, True)
-            pw[n].setLabel('left', text=var)
+            pw[n].setLabel('left', text=key)
             pw[n].setLabel('bottom', text=sweepdev)
             
             curve[n] = pw[n].plot()
             pw[n].show()
-            pw[n].setWindowTitle(var)
+            pw[n].setWindowTitle(key)
             
             plotdata[n] = []
             
@@ -251,9 +249,12 @@ def sweep(device, variable, start, stop, rate, npoints, filename, plot=True, plo
                 latestData = measure()
     
                 j = 0
-                for var in plotlist:
-                    plotdata[j].append(latestData[j])
-                    curve[j].setData(plotsweep, plotdata[j])
+                k = 0
+                for key in md.keys():
+                    if key in plotlist:
+                        plotdata[k].append(latestData[j])
+                        curve[k].setData(plotsweep, plotdata[k])   
+                        k += 1
                     j += 1
     
             # Write stuff
@@ -340,9 +341,7 @@ def record(dt, npoints, filename, plot=True, plotlist=None, md=None):
     
     # Initialize plotlist if none given
     if plotlist is None:
-        plotlist = []
-        for devvar in md:
-            plotlist.append(md.get(devvar).get('var'))
+        plotlist = list(md.keys())
     
     # Initialize plot
     if plot:
@@ -352,16 +351,16 @@ def record(dt, npoints, filename, plot=True, plotlist=None, md=None):
         pw = list(range(len(plotlist)))
         
         n = 0
-        for var in plotlist:            
+        for key in plotlist:            
             pw[n] = pg.PlotWidget()
             
             pw[n].showGrid(True, True)
-            pw[n].setLabel('left', text=var)
+            pw[n].setLabel('left', text=key)
             pw[n].setLabel('bottom', 'time (s)')
             
             curve[n] = pw[n].plot()
             pw[n].show()
-            pw[n].setWindowTitle(var)
+            pw[n].setWindowTitle(key)
             
             plotdata[n] = []
             
@@ -380,12 +379,15 @@ def record(dt, npoints, filename, plot=True, plotlist=None, md=None):
         if plot:
             plottime.append(i*dt)
             latestData = measure()
-                
+            
             j = 0
-            for var in plotlist:
-                plotdata[j].append(latestData[j])
-                curve[j].setData(plottime, plotdata[j])
-                j += 1                
+            k = 0
+            for key in md.keys():
+                if key in plotlist:
+                    plotdata[k].append(latestData[j])
+                    curve[k].setData(plottime, plotdata[k])   
+                    k += 1
+                j += 1
 
         # Write stuff
         writedata = measure()
