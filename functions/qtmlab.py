@@ -185,13 +185,14 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
         file.write(header + '\n')
 
     # Move to initial value
+    print('Moving to the initial value...')
     move(device, variable, start, rate)
 
     # Create sweep_curve
     if scale == 'lin':
         sweep_curve = np.round(np.linspace(start, stop, npoints), 3)
     if scale == 'log':
-        sweep_curve = np.round(np.logspace(start, stop, npoints), 3)
+        sweep_curve = np.round(np.logspace(np.log10(start), np.log10(stop), npoints), 3)
 
     # Perform sweep
     for i in range(npoints):
