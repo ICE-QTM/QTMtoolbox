@@ -77,19 +77,12 @@ def move(device, variable, setpoint, rate):
                 time.sleep(0.1)
                 write_command(setpoint)
 
-
         return
     #---------------------------------------------------------------------------
 
     # Get current Value
     read_command = getattr(device, 'read_' + variable)
     cur_val = float(read_command())
-
-    #Check sweep direction
-    if cur_val > setpoint:
-        direction = 'down'
-    else:
-        direction = 'up'
 
     # Determine number of steps
     Dt = abs(setpoint - cur_val) / rate
@@ -101,30 +94,7 @@ def move(device, variable, setpoint, rate):
         for i in range(nSteps):
             write_command = getattr(device, 'write_' + variable)
             write_command(move_curve[i])
-
-            # Wait for device to reach setpoint before next move
-            reached = False
-            cntr = 0
-            while not reached:
-                time.sleep(dt)
-                cur_val = float(read_command())
-                #If the current value matches the desired value at this step we move on
-                if round(cur_val, 2) == round(move_curve[i],2):
-                    reached = True
-                #The machine may move beyond the desired value at this step. In this case we move on as well
-                elif (round(cur_val,2) > round(move_curve[i],2)) and direction == 'up':
-                     reached = True
-                elif (round(cur_val,2) < round(move_curve[i],2)) and direction == 'down':
-                     reached = True
-                #Rounding errors around the decimal 5 are caught here by comparing only the first two decimals
-                elif math.floor(100*cur_val) == math.floor(100*move_curve[i]):
-                     reached = True
-                else:
-                    cntr += 1
-                # If the device is still not there, send the setpoint again
-                time.sleep(dt)
-                write_command(move_curve[i])
-
+            time.sleep(dt)
 
 def measure(md=None):
     """
