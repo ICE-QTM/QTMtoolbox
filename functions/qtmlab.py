@@ -154,7 +154,7 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
     as <filename>.
     For measurements, the 'measurement dictionary', meas_dict, is used.
     """
-    print('Starting a sweep of "' + variable + '" from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + '('+ str(scale)' spacing)' +' steps with rate ' + str(rate) + '.')
+    print('Starting a sweep of "' + variable + '" from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + '('+ str(scale) + ' spacing)' +' steps with rate ' + str(rate) + '.')
 
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
