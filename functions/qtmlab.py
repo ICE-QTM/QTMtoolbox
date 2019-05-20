@@ -64,15 +64,22 @@ def move(device, variable, setpoint, rate):
         write_command(setpoint)
 
         reached = False
+        cntr = 0
         while not reached:
             time.sleep(0.1)
             cur_val = float(read_command())
             if round(cur_val, 2) == round(setpoint, 2):
                 reached = True
+            else:
+                cntr += 1
+            # If the device is still not there, send the setpoint again
+            if cntr == 5:
+                time.sleep(0.1)
+                write_command(setpoint)
+
 
         return
     #---------------------------------------------------------------------------
-
 
     # Get current Value
     read_command = getattr(device, 'read_' + variable)
@@ -97,6 +104,7 @@ def move(device, variable, setpoint, rate):
 
             # Wait for device to reach setpoint before next move
             reached = False
+            cntr = 0
             while not reached:
                 time.sleep(dt)
                 cur_val = float(read_command())
@@ -111,6 +119,11 @@ def move(device, variable, setpoint, rate):
                 #Rounding errors around the decimal 5 are caught here by comparing only the first two decimals
                 elif math.floor(100*cur_val) == math.floor(100*move_curve[i]):
                      reached = True
+                else:
+                    cntr += 1
+                # If the device is still not there, send the setpoint again
+                time.sleep(dt)
+                write_command(move_curve[i])
 
 
 def measure(md=None):
@@ -134,14 +147,14 @@ def measure(md=None):
     return data
 
 
-def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None, md=None):
+def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None, md=None, scale='lin'):
     """
     The sweep command sweeps the <variable> of <device>, from <start> to <stop>.
     Sweeping is done at <rate> and <npoints> are recorded to a datafile saved
     as <filename>.
     For measurements, the 'measurement dictionary', meas_dict, is used.
     """
-    print('Starting a sweep of "' + variable + '" from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' steps with rate ' + str(rate) + '.')
+    print('Starting a sweep of "' + variable + '" from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + '('+ str(scale)' spacing)' +' steps with rate ' + str(rate) + '.')
 
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
@@ -175,7 +188,10 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
     move(device, variable, start, rate)
 
     # Create sweep_curve
-    sweep_curve = np.round(np.linspace(start, stop, npoints), 3)
+    if scale == 'lin':
+        sweep_curve = np.round(np.linspace(start, stop, npoints), 3)
+    if scale == 'log':
+        sweep_curve = np.round(np.logspace(start, stop, npoints), 3)
 
     # Perform sweep
     for i in range(npoints):
