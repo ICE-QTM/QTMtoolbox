@@ -17,7 +17,10 @@ from instruments.Keith2400 import *
 kb = Keithley2400(20)
 kt = Keithley2400(22)
 
-# Define what variables need to be measured (Chuan's measure string, containing "sr1.x,sr1.y,....")
+# Define wait time between 'reaching setpoint' and 'taking measurement' (in seconds)
+dtw = 3
+
+# Define what variables need to be measured
 meas_dict = {
         'kbg.dcv' : {
                 'dev' : kb,
@@ -40,9 +43,10 @@ meas_dict = {
 # Import measurement tools
 from functions import qtmlab
 qtmlab.meas_dict = meas_dict
+qtmlab.dtw = dtw
 
 #%% Batch commands
 """
-Add your batch commands below this comment. Alternatively, run commands individually 
+Add your batch commands below this comment. Alternatively, run commands individually
 from the IPython console
 """

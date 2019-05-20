@@ -63,6 +63,7 @@ def move(device, variable, setpoint, rate):
         write_command = getattr(device, 'write_' + variable)
         write_command(setpoint)
 
+        # Check if the magnet is really at its setpoint, as the device is very slow
         reached = False
         cntr = 0
         while not reached:
@@ -143,6 +144,7 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
         filename = filename_base + '_' + str(append_no) +'.' + filename[1] #add "_N" to the filename where N is the number of loop iterations
         if os.path.isfile(filename) == False: #Only when the newly created filename doesn't exist: inform the user. The whileloop stops.
             print('The file already exists. Filename changed to: ' + filename)
+
     # Get specified variable name, or use default
     if sweepdev is None:
         sweepdev = 'sweepdev'
@@ -179,7 +181,6 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
         datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
         with open(filename, 'a') as file:
             file.write(datastr + '\n')
-
 
 def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
     """
