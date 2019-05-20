@@ -7,7 +7,7 @@ Available functions:
     measure()
     sweep(device, variable, start, stop, rate, npoints, filename)
 
-Version 1.51 (2019-03-12) -- Edited by Joris
+Version 1.6 (2019-05-20)
 Daan Wielens   - PhD at ICE/QTM - daan@daanwielens.com
 Joris Voerman  - PhD at ICE/QTM - j.a.voerman@utwente.nl
 University of Twente
@@ -124,7 +124,7 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
     as <filename>.
     For measurements, the 'measurement dictionary', meas_dict, is used.
     """
-    print('Starting a sweep of "' + variable + '" from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + '('+ str(scale) + ' spacing)' +' steps with rate ' + str(rate) + '.')
+    print('Starting a sweep of "' + variable + '" from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' ('+ str(scale) + ' spacing)' +' steps with rate ' + str(rate) + '.')
 
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
