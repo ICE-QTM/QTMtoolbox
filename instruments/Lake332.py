@@ -66,3 +66,6 @@ class Lake332:
             self.visa.write('RANGE 2')
         if val in ['High', 'high', 3]:
             self.visa.write('RANGE 3')
+            
+    def heater_off(self):
+        self.visa.write('RANGE 0')
