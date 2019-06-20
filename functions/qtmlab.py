@@ -27,6 +27,24 @@ dtw = 1             # Wait time before measurement [s]
 if not os.path.isdir('Data'):
     os.mkdir('Data')
 
+# Filename checker
+def checkfname(filename):
+    """
+    This function checks if the to-be-created measurement file already exists.
+    If so, it appends a number. For all successive existing (numbered) files,
+    it raises the counter
+    """
+    append_no = 0;
+    while os.path.isfile(filename):
+        append_no += 1 #Count the number of times the file already existed
+        filename = filename.split('.')
+        if append_no == 1: #The first time the program finds the unedited filename. We save it as the base
+            filename_base = filename[0]
+        filename = filename_base + '_' + str(append_no) +'.' + filename[1] #add "_N" to the filename where N is the number of loop iterations
+        if os.path.isfile(filename) == False: #Only when the newly created filename doesn't exist: inform the user. The whileloop stops.
+            print('The file already exists. Filename changed to: ' + filename)
+    return(filename)
+
 def move(device, variable, setpoint, rate):
     """
     The move command moves <variable> of <device> to <setpoint> at <rate>.
@@ -135,15 +153,7 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
     filename = 'Data/' + filename
 
     # Initialise datafile
-    append_no = 0;
-    while os.path.isfile(filename):
-        append_no += 1 #Count the number of times the file already existed
-        filename = filename.split('.')
-        if append_no == 1: #The first time the program finds the unedited filename. We save it as the base
-            filename_base = filename[0]
-        filename = filename_base + '_' + str(append_no) +'.' + filename[1] #add "_N" to the filename where N is the number of loop iterations
-        if os.path.isfile(filename) == False: #Only when the newly created filename doesn't exist: inform the user. The whileloop stops.
-            print('The file already exists. Filename changed to: ' + filename)
+    filename = checkfname(filename)
 
     # Get specified variable name, or use default
     if sweepdev is None:
@@ -222,15 +232,7 @@ def record(dt, npoints, filename, md=None):
     filename = 'Data/' + filename
 
     # Initialise datafile
-    append_no = 0;
-    while os.path.isfile(filename):
-        append_no += 1 #Count the number of times the file already existed
-        filename = filename.split('.')
-        if append_no == 1: #The first time the program finds the unedited filename. We save it as the base
-            filename_base = filename[0]
-        filename = filename_base + '_' + str(append_no) +'.' + filename[1] #add "_N" to the filename where N is the number of loop iterations
-        if os.path.isfile(filename) == False: #Only when the newly created filename doesn't exist: inform the user. The whileloop stops.
-            print('The file already exists. Filename changed to: ' + filename)
+    filename = checkfname(filename)
 
     # Build header
     header = 'time'
