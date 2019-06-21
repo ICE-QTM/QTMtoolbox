@@ -250,3 +250,67 @@ def record(dt, npoints, filename, md=None):
         with open(filename, 'a') as file:
             file.write(datastr + '\n')
         time.sleep(dt)
+
+def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1=None, sweepdev2=None, md=None):
+    """
+    The megasweep command sweeps two variables. Variable 1 is the "slow" variable.
+    For every datapoint of variable 1, a sweep of variable 2 ("fast" variable) is performed.
+    The syntax for both variables is <device>, <variable>, <start>, <stop>, <rate>, <npoints>.
+    For measurements, the 'measurement dictionary', meas_dict, is used.
+    """
+    print('Starting a megasweep of the following variables:')
+    print('1: "' + variable1 + '" from ' + str(start1) + ' to ' + str(stop1) + ' in ' + str(npoints1) + ' steps with rate ' + str(rate1))
+    print('2: "' + variable2 + '" from ' + str(start2) + ' to ' + str(stop2) + ' in ' + str(npoints2) + ' steps with rate ' + str(rate2))
+
+    # Trick to make sure that dictionary loading is handled properly at startup
+    if md is None:
+        md = meas_dict
+
+    # Make sure that the datafile is stored in the 'Data' folder
+    filename = 'Data/' + filename
+
+    # Initialise datafile
+    filename = checkfname(filename)
+
+    # Get specified variable name, or use default
+    if sweepdev1 is None:
+        sweepdev1 = 'sweepdev1'
+    if sweepdev2 is None:
+        sweepdev2 = 'sweepdev2'
+    header = sweepdev1 + ', ' + sweepdev2
+    # Add device of 'meas_list'
+    for dev in md:
+        header = header + ', ' + dev
+    # Write header to file
+    with open(filename, 'w') as file:
+        file.write(header + '\n')
+
+    # Move to initial value
+    print('Moving variable1 to the initial value...')
+    move(device1, variable1, start1, rate1)
+    print('Moving variable2 to the initial value...')
+    move(device2, variable2, start2, rate2)
+
+    # Create sweep_curve
+    sweep_curve1 = np.round(np.linspace(start1, stop1, npoints1), 3)
+    sweep_curve2 = np.round(np.linspace(start2, stop2, npoints2), 3)
+
+    # Perform sweep: currently "standard" mode
+    for i in range(npoints1):
+        # Move device1 to value1
+        print('Measuring for device 1 at {}'.format(sweep_curve1[i]))
+        move(device1, variable1, sweep_curve1[i], rate1)
+        for j in range(npoints2):
+            # Move device2 to initial value
+            print('   Sweeping to: {}'.format(sweep_curve2[j]))
+            move(device2, variable2, sweep_curve2[j], rate2)
+            # Wait, then measure
+            print('      Waiting for measurement...')
+            time.sleep(dtw)
+            print('      Performing measurement.')
+            data = np.hstack((sweep_curve1[i], sweep_curve2[j], measure()))
+
+            #Add data to file
+            datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
+            with open(filename, 'a') as file:
+                file.write(datastr + '\n')
