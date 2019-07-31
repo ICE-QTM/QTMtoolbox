@@ -27,7 +27,7 @@ class si9700:
     def __init__(self, GPIBaddr):
         rm = visa.ResourceManager()
         self.visa = rm.open_resource('GPIB0::{}::INSTR'.format(GPIBaddr))
-        # Check if device is really a Lakeshore 332
+        # Check if device is really a Scientific Instruments 9700 Controller
         resp = self.visa.query('*IDN?')
         model = resp.split(',')[1]
         if model != '9700':
