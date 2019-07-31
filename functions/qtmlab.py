@@ -258,7 +258,7 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
     The syntax for both variables is <device>, <variable>, <start>, <stop>, <rate>, <npoints>.
     For measurements, the 'measurement dictionary', meas_dict, is used.
     """
-    print('Starting a megasweep of the following variables:')
+    print('Starting a "' + mode + '" megasweep of the following variables:')
     print('1: "' + variable1 + '" from ' + str(start1) + ' to ' + str(stop1) + ' in ' + str(npoints1) + ' steps with rate ' + str(rate1))
     print('2: "' + variable2 + '" from ' + str(start2) + ' to ' + str(stop2) + ' in ' + str(npoints2) + ' steps with rate ' + str(rate2))
 
@@ -326,13 +326,13 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
             sweep_curve2ud = np.hstack((sweep_curve2, sweep_curve2[::-1]))
             for j in range(npoints2*2):
                 # Move device2 to measurement value
-                print('   Sweeping to: {}'.format(sweep_curve2[j]))
-                move(device2, variable2, sweep_curve2[j], rate2)
+                print('   Sweeping to: {}'.format(sweep_curve2ud[j]))
+                move(device2, variable2, sweep_curve2ud[j], rate2)
                 # Wait, then measure
                 print('      Waiting for measurement...')
                 time.sleep(dtw)
                 print('      Performing measurement.')
-                data = np.hstack((sweep_curve1[i], sweep_curve2[j], measure()))
+                data = np.hstack((sweep_curve1[i], sweep_curve2ud[j], measure()))
 
                 #Add data to file
                 datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
@@ -348,7 +348,7 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
             move(device1, variable1, sweep_curve1[i], rate1)
             # Sweep variable2
             if (z % 2) == 1:
-                for j in range(npoints2*2):
+                for j in range(npoints2):
                     # Move device2 to measurement value
                     print('   Sweeping to: {}'.format(sweep_curve2[j]))
                     move(device2, variable2, sweep_curve2[j], rate2)
@@ -364,16 +364,16 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
                         file.write(datastr + '\n')
 
             if (z % 2) == 0:
-                for j in range(npoints2*2):
+                for j in range(npoints2):
                     # Move device2 to measurement value
                     #  Here, we take -j to reverse the direction of the sweep.
-                    print('   Sweeping to: {}'.format(sweep_curve2[-j]))
-                    move(device2, variable2, sweep_curve2[j], rate2)
+                    print('   Sweeping to: {}'.format(sweep_curve2[-(j+1)]))
+                    move(device2, variable2, sweep_curve2[-(j+1)], rate2)
                     # Wait, then measure
                     print('      Waiting for measurement...')
                     time.sleep(dtw)
                     print('      Performing measurement.')
-                    data = np.hstack((sweep_curve1[i], sweep_curve2[-j], measure()))
+                    data = np.hstack((sweep_curve1[i], sweep_curve2[-(j+1)], measure()))
 
                     #Add data to file
                     datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
