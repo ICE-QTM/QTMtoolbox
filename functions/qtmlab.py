@@ -251,7 +251,7 @@ def record(dt, npoints, filename, md=None):
             file.write(datastr + '\n')
         time.sleep(dt)
 
-def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1=None, sweepdev2=None, md=None):
+def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1=None, sweepdev2=None, mode='standard', md=None):
     """
     The megasweep command sweeps two variables. Variable 1 is the "slow" variable.
     For every datapoint of variable 1, a sweep of variable 2 ("fast" variable) is performed.
@@ -295,22 +295,87 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
     sweep_curve1 = np.round(np.linspace(start1, stop1, npoints1), 3)
     sweep_curve2 = np.round(np.linspace(start2, stop2, npoints2), 3)
 
-    # Perform sweep: currently "standard" mode
-    for i in range(npoints1):
-        # Move device1 to value1
-        print('Measuring for device 1 at {}'.format(sweep_curve1[i]))
-        move(device1, variable1, sweep_curve1[i], rate1)
-        for j in range(npoints2):
-            # Move device2 to initial value
-            print('   Sweeping to: {}'.format(sweep_curve2[j]))
-            move(device2, variable2, sweep_curve2[j], rate2)
-            # Wait, then measure
-            print('      Waiting for measurement...')
-            time.sleep(dtw)
-            print('      Performing measurement.')
-            data = np.hstack((sweep_curve1[i], sweep_curve2[j], measure()))
+    if mode=='standard':
+        for i in range(npoints1):
+            # Move device1 to value1
+            print('Measuring for device 1 at {}'.format(sweep_curve1[i]))
+            move(device1, variable1, sweep_curve1[i], rate1)
+            # Sweep variable2
+            for j in range(npoints2):
+                # Move device2 to measurement value
+                print('   Sweeping to: {}'.format(sweep_curve2[j]))
+                move(device2, variable2, sweep_curve2[j], rate2)
+                # Wait, then measure
+                print('      Waiting for measurement...')
+                time.sleep(dtw)
+                print('      Performing measurement.')
+                data = np.hstack((sweep_curve1[i], sweep_curve2[j], measure()))
 
-            #Add data to file
-            datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
-            with open(filename, 'a') as file:
-                file.write(datastr + '\n')
+                #Add data to file
+                datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
+                with open(filename, 'a') as file:
+                    file.write(datastr + '\n')
+
+    elif mode=='updown':
+        for i in range(npoints1):
+            # Move device1 to value1
+            print('Measuring for device 1 at {}'.format(sweep_curve1[i]))
+            move(device1, variable1, sweep_curve1[i], rate1)
+            # Sweep variable2
+            #   We create a linspace that replaces the range: the linspace goes back and forth
+            sweep_curve2ud = np.hstack((sweep_curve2, sweep_curve2[::-1]))
+            for j in range(npoints2*2):
+                # Move device2 to measurement value
+                print('   Sweeping to: {}'.format(sweep_curve2[j]))
+                move(device2, variable2, sweep_curve2[j], rate2)
+                # Wait, then measure
+                print('      Waiting for measurement...')
+                time.sleep(dtw)
+                print('      Performing measurement.')
+                data = np.hstack((sweep_curve1[i], sweep_curve2[j], measure()))
+
+                #Add data to file
+                datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
+                with open(filename, 'a') as file:
+                    file.write(datastr + '\n')
+
+    elif mode=='serpentine':
+        z = 0
+        for i in range(npoints1):
+            z += 1
+            # Move device1 to value1
+            print('Measuring for device 1 at {}'.format(sweep_curve1[i]))
+            move(device1, variable1, sweep_curve1[i], rate1)
+            # Sweep variable2
+            if (z % 2) == 1:
+                for j in range(npoints2*2):
+                    # Move device2 to measurement value
+                    print('   Sweeping to: {}'.format(sweep_curve2[j]))
+                    move(device2, variable2, sweep_curve2[j], rate2)
+                    # Wait, then measure
+                    print('      Waiting for measurement...')
+                    time.sleep(dtw)
+                    print('      Performing measurement.')
+                    data = np.hstack((sweep_curve1[i], sweep_curve2[j], measure()))
+
+                    #Add data to file
+                    datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
+                    with open(filename, 'a') as file:
+                        file.write(datastr + '\n')
+
+            if (z % 2) == 0:
+                for j in range(npoints2*2):
+                    # Move device2 to measurement value
+                    #  Here, we take -j to reverse the direction of the sweep.
+                    print('   Sweeping to: {}'.format(sweep_curve2[-j]))
+                    move(device2, variable2, sweep_curve2[j], rate2)
+                    # Wait, then measure
+                    print('      Waiting for measurement...')
+                    time.sleep(dtw)
+                    print('      Performing measurement.')
+                    data = np.hstack((sweep_curve1[i], sweep_curve2[-j], measure()))
+
+                    #Add data to file
+                    datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
+                    with open(filename, 'a') as file:
+                        file.write(datastr + '\n')
