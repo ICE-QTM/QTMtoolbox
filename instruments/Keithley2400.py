@@ -57,7 +57,7 @@ class Keithley2400:
         return resp
 
     def write_dci(self, val):
-        self.visa.write('SOUR:CURR:LEV ' + val + '\n')
+        self.visa.write('SOUR:CURR:LEV ' + str(val) + '\n')
 
     def read_i(self):
         resp = str(self.visa.query('READ?').strip('\n'))
