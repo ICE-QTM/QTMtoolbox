@@ -16,6 +16,7 @@ import time
 import numpy as np
 import os
 import math
+from datetime import datetime
 
 meas_dict = {}
 
@@ -136,14 +137,14 @@ def measure(md=None):
     return data
 
 
-def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None, md=None, scale='lin'):
+def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=None, scale='lin'):
     """
     The sweep command sweeps the <variable> of <device>, from <start> to <stop>.
     Sweeping is done at <rate> and <npoints> are recorded to a datafile saved
     as <filename>.
     For measurements, the 'measurement dictionary', meas_dict, is used.
     """
-    print('Starting a sweep of "' + variable + '" from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' ('+ str(scale) + ' spacing)' +' steps with rate ' + str(rate) + '.')
+    print('Starting a sweep of "' + sweepdev + '" from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' ('+ str(scale) + ' spacing)' +' steps with rate ' + str(rate) + '.')
 
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
@@ -155,15 +156,17 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev=None,
     # Initialise datafile
     filename = checkfname(filename)
 
-    # Get specified variable name, or use default
-    if sweepdev is None:
-        sweepdev = 'sweepdev'
+    # Create header
     header = sweepdev
     # Add device of 'meas_list'
     for dev in md:
-        header = header + ', ' + dev
+        header =  + ', ' + dev
     # Write header to file
     with open(filename, 'w') as file:
+        dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+        file.write(dtm + '\n')
+        swcmd = 'sweep of ' + sweepdev  + ' from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' ('+ str(scale) + ' spacing)' +' steps with rate ' + str(rate)
+        file.write(swcmd + '\n')
         file.write(header + '\n')
 
     # Move to initial value
@@ -240,6 +243,10 @@ def record(dt, npoints, filename, md=None):
         header = header + ', ' + dev
     # Write header to file
     with open(filename, 'w') as file:
+        dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+        file.write(dtm + '\n')
+        swcmd = 'record data with dt = ' + str(dt) + ' s for max ' + str(npoints) + ' datapoints'
+        file.write(swcmd + '\n')
         file.write(header + '\n')
 
     # Perform record
