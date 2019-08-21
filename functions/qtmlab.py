@@ -5,9 +5,14 @@ Functions that can be used in measurements within the QTMlab framework.
 Available functions:
     move(device, variable, setpoint, rate)
     measure()
-    sweep(device, variable, start, stop, rate, npoints, filename)
+    sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, scale='lin')
+    waitfor(device, variable, setpoint, threshold=0.05, tmin=60)
+    record(dt, npoints, filename)
+    megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard')
 
-Version 1.6 (2019-05-20)
+Version 1.7 (2019-08-21)
+
+Contributors:
 Daan Wielens   - PhD at ICE/QTM - daan@daanwielens.com
 Joris Voerman  - PhD at ICE/QTM - j.a.voerman@utwente.nl
 University of Twente
@@ -160,12 +165,12 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
     header = sweepdev
     # Add device of 'meas_list'
     for dev in md:
-        header =  + ', ' + dev
+        header = header + ', ' + dev
     # Write header to file
     with open(filename, 'w') as file:
         dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
         file.write(dtm + '\n')
-        swcmd = 'sweep of ' + sweepdev  + ' from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' ('+ str(scale) + ' spacing)' +' steps with rate ' + str(rate)
+        swcmd = 'sweep of ' + sweepdev  + ' from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' steps ('+ str(scale) + ' spacing)' +' with rate ' + str(rate)
         file.write(swcmd + '\n')
         file.write(header + '\n')
 
@@ -258,7 +263,7 @@ def record(dt, npoints, filename, md=None):
             file.write(datastr + '\n')
         time.sleep(dt)
 
-def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1=None, sweepdev2=None, mode='standard', md=None):
+def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard', md=None):
     """
     The megasweep command sweeps two variables. Variable 1 is the "slow" variable.
     For every datapoint of variable 1, a sweep of variable 2 ("fast" variable) is performed.
@@ -279,17 +284,17 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
     # Initialise datafile
     filename = checkfname(filename)
 
-    # Get specified variable name, or use default
-    if sweepdev1 is None:
-        sweepdev1 = 'sweepdev1'
-    if sweepdev2 is None:
-        sweepdev2 = 'sweepdev2'
+    # Create header
     header = sweepdev1 + ', ' + sweepdev2
     # Add device of 'meas_list'
     for dev in md:
         header = header + ', ' + dev
     # Write header to file
     with open(filename, 'w') as file:
+        dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+        file.write(dtm + '\n')
+        swcmd = 'Megasweep of (1)' + sweepdev1  + ' from ' + str(start1) + ' to ' + str(stop1) + ' in ' + str(npoints1)  +' steps with rate ' + str(rate) + 'and (2) ' + sweepdev2  + ' from ' + str(start2) + ' to ' + str(stop2) + ' in ' + str(npoints2)  +' steps with rate ' + str(rate2)
+        file.write(swcmd + '\n')
         file.write(header + '\n')
 
     # Move to initial value
