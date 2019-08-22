@@ -29,6 +29,7 @@ class sr830:
     def __init__(self, GPIBaddr):
         rm = visa.ResourceManager()
         self.visa = rm.open_resource('GPIB0::{}::INSTR'.format(GPIBaddr))
+        self.GPIBnum = GPIBaddr
         # Check if device is really a sr830 lock-in
         resp = self.visa.query('*IDN?')
         model = resp.split(',')[1]
@@ -149,7 +150,7 @@ class sr830:
 
         #Notify user
         if changed == 1:
-            print(' <!> Changed lock-in (GPIB: ' + str(GPIBaddr) + ') sensitivity to ' + str(sens_val) + ' V.')
+            print(' <!> Changed lock-in (GPIB: ' + str(self.GPIBnum) + ') sensitivity to ' + str(sens_val) + ' V.')
 
         # Return x-value to user
         xval = float(self.visa.query('OUTP?1').strip('\n').strip('\r'))
