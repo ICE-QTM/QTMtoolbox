@@ -12,6 +12,7 @@ daan@daanwielens.com
 """
 
 import visa
+import time
 
 class WrongInstrErr(Exception):
     """
@@ -119,3 +120,28 @@ class sr830:
     def write_dac4(self, val):
         fval = float(val)
         self.visa.write('AUXV4, ' + str(fval) + '\n')
+
+    def read_auto_x(self):
+        # Get data
+        xval = float(self.visa.query('OUTP?1').strip('\n').strip('\r'))
+        cur_sens = int(self.visa.query('SENS?').strip('\n').strip('\r'))
+        sens = np.array([2e-9, 5e-9, 1e-8, 2e-8, 5e-8, 1e-7, 2e-7, 5e-7, 1e-6, 2e-6, 5e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3, 1e-2, 2e-2, 5e-2, 1e-1, 2e-1, 5e-1, 1])
+        sens_val = sens[cur_sens-1]
+        # Change sensitivity if necessary
+        while abs(xval) > 0.9*sens_val:
+            cur_sens += 1
+            self.visa.write('SENS ' + str(cur_sens) + '\n')
+            time.sleep(5)
+            xval = float(self.visa.query('OUTP?1').strip('\n').strip('\r'))
+            cur_sens = int(self.visa.query('SENS?').strip('\n').strip('\r'))
+            sens_val = sens[cur_sens-1]
+        while abs(xval) < 0.1*sens_val:
+            cur_sens -= 1
+            self.visa.write('SENS ' + str(cur_sens) + '\n')
+            time.sleep(5)
+            xval = float(self.visa.query('OUTP?1').strip('\n').strip('\r'))
+            cur_sens = int(self.visa.query('SENS?').strip('\n').strip('\r'))
+            sens_val = sens[cur_sens-1]
+
+        print(' <!> Changed lock-in sensitivity to ' + str(sens_val) + ' V.')
+        return xval
