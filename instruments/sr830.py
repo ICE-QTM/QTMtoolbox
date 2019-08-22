@@ -146,11 +146,11 @@ class sr830:
             rval = float(self.visa.query('OUTP?3').strip('\n').strip('\r'))
             cur_sens = int(self.visa.query('SENS?').strip('\n').strip('\r'))
             sens_val = sens[cur_sens]
-        
+
         #Notify user
         if changed == 1:
-            print(' <!> Changed lock-in sensitivity to ' + str(sens_val) + ' V.')
-            
-        # Return x-value to user    
-        xval = float(self.visa.query('OUTP?1').strip('\n').strip('\r'))  
+            print(' <!> Changed lock-in (GPIB: ' + str(GPIBaddr) + ') sensitivity to ' + str(sens_val) + ' V.')
+
+        # Return x-value to user
+        xval = float(self.visa.query('OUTP?1').strip('\n').strip('\r'))
         return xval
