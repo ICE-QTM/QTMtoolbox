@@ -293,7 +293,7 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
     with open(filename, 'w') as file:
         dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
         file.write(dtm + '\n')
-        swcmd = 'Megasweep of (1)' + sweepdev1  + ' from ' + str(start1) + ' to ' + str(stop1) + ' in ' + str(npoints1)  +' steps with rate ' + str(rate) + 'and (2) ' + sweepdev2  + ' from ' + str(start2) + ' to ' + str(stop2) + ' in ' + str(npoints2)  +' steps with rate ' + str(rate2)
+        swcmd = 'Megasweep of (1)' + sweepdev1  + ' from ' + str(start1) + ' to ' + str(stop1) + ' in ' + str(npoints1)  +' steps with rate ' + str(rate1) + 'and (2) ' + sweepdev2  + ' from ' + str(start2) + ' to ' + str(stop2) + ' in ' + str(npoints2)  +' steps with rate ' + str(rate2)
         file.write(swcmd + '\n')
         file.write(header + '\n')
 
