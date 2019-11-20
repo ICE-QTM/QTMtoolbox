@@ -304,8 +304,8 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
     move(device2, variable2, start2, rate2)
 
     # Create sweep_curve
-    sweep_curve1 = np.round(np.linspace(start1, stop1, npoints1), 3)
-    sweep_curve2 = np.round(np.linspace(start2, stop2, npoints2), 3)
+    sweep_curve1 = np.linspace(start1, stop1, npoints1)
+    sweep_curve2 = np.linspace(start2, stop2, npoints2)
 
     if mode=='standard':
         for i in range(npoints1):
