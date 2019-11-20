@@ -10,7 +10,7 @@ Available functions:
     record(dt, npoints, filename)
     megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard')
 
-Version 1.7 (2019-08-21)
+Version 1.8 (2019-11-20)
 
 Contributors:
 Daan Wielens   - PhD at ICE/QTM - daan@daanwielens.com
@@ -115,7 +115,7 @@ def move(device, variable, setpoint, rate):
     # Only move when setpoint != curval, i.e. nSteps != 0
     if nSteps != 0:
         # Create list of setpoints and change setpoint by looping through array
-        move_curve = np.round(np.linspace(cur_val, setpoint, nSteps), 3)
+        move_curve = np.linspace(cur_val, setpoint, nSteps)
         for i in range(nSteps):
             write_command = getattr(device, 'write_' + variable)
             write_command(move_curve[i])
