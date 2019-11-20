@@ -180,9 +180,9 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
 
     # Create sweep_curve
     if scale == 'lin':
-        sweep_curve = np.round(np.linspace(start, stop, npoints), 3)
+        sweep_curve = np.linspace(start, stop, npoints)
     if scale == 'log':
-        sweep_curve = np.round(np.logspace(np.log10(start), np.log10(stop), npoints), 3)
+        sweep_curve = np.logspace(np.log10(start), np.log10(stop), npoints)
 
     # Perform sweep
     for i in range(npoints):
