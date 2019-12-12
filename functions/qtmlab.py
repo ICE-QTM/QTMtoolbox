@@ -73,7 +73,8 @@ def move(device, variable, setpoint, rate):
     if devtype == 'ips120':
         read_command = getattr(device, 'read_' + variable)
         cur_val = float(read_command())
-
+        
+        #Convert rate per second to rate per minute (ips rate is in T/m)
         ratepm = round(rate * 60, 3)
         if ratepm >= 0.4:
             ratepm = 0.4
@@ -102,9 +103,57 @@ def move(device, variable, setpoint, rate):
                 time.sleep(0.2)
                 write_command(setpoint)
 
-        return
     #---------------------------------------------------------------------------
 
+    # Oxford MercuryiPS Controller - alternative approach
+    """
+    Since the VRM (even when operated over GPIB/ethernet) also does not move to
+    setpoints instantly, we implement a similar move command as we did for the 
+    ips120 power supply. 
+    Here, we calculate the rate and send this rate and the new setpoint to the 
+    power supply. We then check whether the magnet's state is "Moving" (i.e. at 
+    least one of the magnet's axes' state is RTOS (ramp to setpoint) or whether
+    the state is "Hold" - only if the state is "Hold", the move command is finished).
+    
+    Currently, one can only move fvalueX, fvalueY, fvalueZ, but not "vector".
+    """
+    #---------------------------------------------------------------------------
+    devtype = str(type(device))[1:-1].split('.')[-1].strip("'")
+    if devtype == 'MercuryiPS':
+        read_command = getattr(device, 'read_' + variable)
+        cur_val = float(read_command())
+        
+        ratepm = round(rate * 60, 3)
+        if ratepm >= 0.2:
+            ratepm = 0.2
+        if ratepm == 0:
+            ratepm = 0.1
+            
+        # This line really only works for fvalue{X,Y,Z}    
+        write_rate = getattr(device, 'write_rate' + variable[-1])
+        write_rate(ratepm)
+        
+        write_command = getattr(device, 'write_' + variable)
+        write_command(setpoint)
+        
+        #Check if the magnet is ready
+        reached = False
+        while not reached:
+            time.sleep(1)
+            state_command = getattr(device, 'read_status')
+            cur_state = state_command()
+            if cur_state == 'HOLD':
+                reached = True
+      
+    #---------------------------------------------------------------------------
+
+    # Devices that can apply a setpoint instantly
+    """
+    The script below applies to most devices, which can apply a given setpoint 
+    instantly. Here, we can not supply a 'rate' to the device, but we create
+    a linspace of setpoints and push them to the device at a regular interval.
+    """
+    
     # Get current Value
     read_command = getattr(device, 'read_' + variable)
     cur_val = float(read_command())
@@ -226,7 +275,7 @@ def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
             stable = True
             print('The device is stable.')
 
-def record(dt, npoints, filename, md=None):
+def record(dt, npoints, filename, append=False, md=None):
     """
     The record command records data with a time interval of <dt> seconds. It
     will record data for a number of <npoints> and store it in <filename>.
@@ -235,25 +284,26 @@ def record(dt, npoints, filename, md=None):
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
         md = meas_dict
-
+        
     # Make sure that the datafile is stored in the 'Data' folder
     filename = 'Data/' + filename
-
-    # Initialise datafile
-    filename = checkfname(filename)
-
-    # Build header
-    header = 'time'
-    for dev in md:
-        header = header + ', ' + dev
-    # Write header to file
-    with open(filename, 'w') as file:
-        dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
-        file.write(dtm + '\n')
-        swcmd = 'record data with dt = ' + str(dt) + ' s for max ' + str(npoints) + ' datapoints'
-        file.write(swcmd + '\n')
-        file.write(header + '\n')
-
+    
+    if append == False:
+        # Initialise datafile
+        filename = checkfname(filename)
+    
+        # Build header
+        header = 'time'
+        for dev in md:
+            header = header + ', ' + dev
+        # Write header to file
+        with open(filename, 'w') as file:
+            dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+            file.write(dtm + '\n')
+            swcmd = 'record data with dt = ' + str(dt) + ' s for max ' + str(npoints) + ' datapoints'
+            file.write(swcmd + '\n')
+            file.write(header + '\n')
+            
     # Perform record
     for i in range(npoints):
         print('Performing measurement at t = ' + str(i*dt) + ' s.')
