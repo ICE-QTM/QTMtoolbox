@@ -91,15 +91,15 @@ def move(device, variable, setpoint, rate):
         reached = False
         cntr = 0
         while not reached:
-            time.sleep(0.1)
+            time.sleep(0.2)
             cur_val = float(read_command())
-            if round(cur_val, 2) == round(setpoint, 2):
+            if round(cur_val, 4) == round(setpoint, 4):
                 reached = True
             else:
                 cntr += 1
             # If the device is still not there, send the setpoint again
             if cntr == 5:
-                time.sleep(0.1)
+                time.sleep(0.2)
                 write_command(setpoint)
 
         return
