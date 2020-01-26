@@ -10,7 +10,7 @@ Available functions:
     record(dt, npoints, filename)
     megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard')
 
-Version 1.8 (2019-11-20)
+Version 1.9 (2020-01-26)
 
 Contributors:
 Daan Wielens   - PhD at ICE/QTM - daan@daanwielens.com
@@ -85,6 +85,8 @@ def move(device, variable, setpoint, rate):
         write_rate = getattr(device, 'write_rate')
         write_rate(ratepm)
 
+        # Magnet's precision = 0.0001, so round setpoint before sending the value
+        setpoint = round(setpoint, 4)
         write_command = getattr(device, 'write_' + variable)
         write_command(setpoint)
 
