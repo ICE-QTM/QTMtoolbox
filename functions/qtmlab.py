@@ -277,13 +277,16 @@ def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
             stable = True
             print('The device is stable.')
 
-def record(dt, npoints, filename, append=False, md=None):
+def record(dt, npoints, filename, append=False, md=None, silent=False):
     """
     The record command records data with a time interval of <dt> seconds. It
     will record data for a number of <npoints> and store it in <filename>.
     """
     print('Recording data with a time interval of ' + str(dt) + ' seconds for (up to) ' + str(npoints) + ' points. Hit <Ctrl+C> to abort.')
+    if silent:
+        print('   Silent mode enabled. Measurements will not be logged in the console.')
     # Trick to make sure that dictionary loading is handled properly at startup
+    
     if md is None:
         md = meas_dict
         
@@ -308,7 +311,8 @@ def record(dt, npoints, filename, append=False, md=None):
             
     # Perform record
     for i in range(npoints):
-        print('Performing measurement at t = ' + str(i*dt) + ' s.')
+        if not silent:
+            print('   Performing measurement at t = ' + str(i*dt) + ' s.')
         data = measure()
         datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ')[1:-1]).replace('\n', '')
         with open(filename, 'a') as file:
