@@ -8,7 +8,7 @@ Assumes the address is of the form COM<xx> where
 We assume that the IVVI rack has 16 DACs.
 Script based on: http://qtwork.tudelft.nl/~schouten/ivvi/doc-d5/rs232linkformat.txt
 
-Version 1.2 (2019-08-29)
+Version 2.0 (2020-02-05)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -26,18 +26,13 @@ class IVVI:
         self.ser.parity = serial.PARITY_ODD
         self.ser.stopbits = 1
         self.ser.bytesize = 8
-        try:
-            self.ser.open()
-        except Exception:
-            print('Serial port to IVVI rack is already open. Skipping initialisation.')
-
-    def close(self):
-        self.ser.close()
 
     def read_dacs(self):
         read_msg = bytes([4, 0, 34, 2])
+        self.ser.open()
         self.ser.write(read_msg)
         resp = self.ser.read(34)
+        self.ser.close()
 
         values_int = list(range(16))
         values_Volts = list(range(16))
@@ -62,8 +57,10 @@ class IVVI:
         # Change setpoint
         bytevalue = int(((val+2)/4) * 65535).to_bytes(length=2, byteorder='big') 
         set_msg = bytes([7, 0, 2, 1, dac]) + bytevalue
+        self.ser.open()
         self.ser.write(set_msg)
         self.ser.read(2)
+        self.ser.close()
         
     def read_dac(self, dac):
         if (dac > 0) and (dac < 17):
