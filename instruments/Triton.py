@@ -3,7 +3,7 @@
 Module to interact with the Oxford Triton controller pc.
 Uses TCP/IP sockets to communicate with the GPIB device.
 
-Version 1.0 (2018-09-21)
+Version 1.1 (2020-03-03)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -59,12 +59,12 @@ class Triton:
     def read_PID5(self):
         self.s.sendall('READ:DEV:T5:TEMP:LOOP:TSET\r\n'.encode())
         resp = self.s.recv(1400).decode().split(':')[-1].strip('K\n')
-        return resp
+        return float(resp)
 
     def read_PID8(self):
         self.s.sendall('READ:DEV:T8:TEMP:LOOP:TSET\r\n'.encode())
         resp = self.s.recv(1400).decode().split(':')[-1].strip('K\n')
-        return resp
+        return float(resp)
 
     def write_range(self, val):
         self.s.sendall(('SET:DEV:T8:TEMP:LOOP:RANGE:' + str(val) + '\r\n').encode())
