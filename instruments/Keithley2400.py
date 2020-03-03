@@ -5,7 +5,7 @@ Uses pyVISA to communicate with the GPIB device.
 Assumes GPIB address is of the form GPIB0::<xx>::INSTR where
 <xx> is the device address (number).
 
-Version 1.0 (2018-08-24)
+Version 1.1 (2020-03-03)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -63,3 +63,11 @@ class Keithley2400:
         resp = str(self.visa.query('READ?').strip('\n'))
         val = float(resp.split(',')[1])
         return val
+        
+    def write_Vrange(self, val):
+        if val in ['MAX', 'max', 'maximum', '210']:
+            self.visa.write('SOUR:VOLT:RANG MAX\n')
+        if val in ['DEF', 'def', 'default,', '21']
+            self.visa.write('SOUR:VOLT:RANG DEF\n')
+        if val in ['MIN', 'min', 'minimum']:
+            self.visa.write('SOUR:VOLT:RANG MIN\n')
