@@ -2,7 +2,7 @@
 """
 Main script of the Python QTM measurement toolbox.
 
-Version 1.0 (2018-08-24)
+Version 2.0 (2020-03-04)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -21,30 +21,13 @@ kt = Keithley2400(22)
 dtw = 3
 
 # Define what variables need to be measured
-meas_dict = {
-        'kbg.dcv' : {
-                'dev' : kb,
-                'var' : 'dcv'
-                },
-        'kbg.i' : {
-                'dev' : kb,
-                'var' : 'i'
-                },
-        'ktg.dcv' : {
-                'dev' : kt,
-                'var' : 'dcv'
-                },
-        'ktg.i' : {
-                'dev' : kt,
-                'var' : 'i'
-                }
-        }
+meas_list = 'kb.dcv, kt.dcv, kb.i, kt.i'
 
 # Import measurement tools
 from functions import qtmlab
+meas_dict = qtmlab.generate_meas_dict(globals(), meas_list)
 qtmlab.meas_dict = meas_dict
 qtmlab.dtw = dtw
-
 #%% Batch commands
 """
 Add your batch commands below this comment. Alternatively, run commands individually
