@@ -117,6 +117,10 @@ def move(device, variable, setpoint, rate):
     least one of the magnet's axes' state is RTOS (ramp to setpoint) or whether
     the state is "Hold" - only if the state is "Hold", the move command is finished).
     
+    Sometimes, the magnet does not move correctly, so when it says RTOS but is
+    not changing its setpoint, we set the magnet to HOLD and then try again. This
+    is not very nice, but it circumvents the issues for the moment.
+    
     Currently, one can only move fvalueX, fvalueY, fvalueZ, but not "vector".
     """
     #---------------------------------------------------------------------------
@@ -138,14 +142,35 @@ def move(device, variable, setpoint, rate):
         write_command = getattr(device, 'write_' + variable)
         write_command(setpoint)
         
-        #Check if the magnet is ready
+        #Check if the magnet reached its setpoint
         reached = False
+        cntr = 0 # Initialise counter
         while not reached:
-            time.sleep(1)
+            time.sleep(0.5)
             state_command = getattr(device, 'read_status')
+            prev_val = float(read_command())
             cur_state = state_command()
+            # Check if magnet is moving (RTOS) or holding (HOLD)
             if cur_state == 'HOLD':
-                reached = True
+                # Check if field value is same as setpoint (within margin because
+                # of the fluctuations in the given value)
+                new_val = float(read_command())
+                if abs(new_val - setpoint) < 1E-4:
+                    reached = True
+                    time.sleep(1)
+            else:
+                time.sleep(0.5)
+                cntr += 1
+                new_val = float(read_command())
+                if abs(new_val - prev_val) < 1E-4 and cntr == 10:
+                    cntr = 0
+                    hold_command = getattr(device, 'hold')
+                    hold_command()
+                    time.sleep(0.5)
+                    write_command(setpoint)
+                    print('   Mercury iPS: performed "HOLD / RTOS" sequence.')
+                else:
+                    prev_val = new_val
       
     #---------------------------------------------------------------------------
 
@@ -447,3 +472,19 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
                     datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
                     with open(filename, 'a') as file:
                         file.write(datastr + '\n')
+
+def generate_meas_dict(globals_dict, meas_list):
+    """
+    Generates meas_dict from more compact meas_list.
+    When calling this function, enter globals() for the globals_dict.
+    """
+    meas_dict = dict()
+    meas_list = meas_list.replace(' ','').split(',')
+    for devvar in meas_list:
+        split = devvar.split('.')
+        devstring = split[0]
+        var = split[1]
+        dev = globals_dict[devstring]
+        meas_dict[devvar] = {'dev': dev,
+                             'var': var}
+    return meas_dict
