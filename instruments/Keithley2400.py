@@ -5,7 +5,7 @@ Uses pyVISA to communicate with the GPIB device.
 Assumes GPIB address is of the form GPIB0::<xx>::INSTR where
 <xx> is the device address (number).
 
-Version 1.1 (2020-03-03)
+Version 1.2 (2020-03-09)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -39,6 +39,10 @@ class Keithley2400:
 
     def close(self):
         self.visa.close()
+        
+    def query(self, val):
+        resp = self.visa.query(val).strip('\n')
+        return resp
 
     def read_dcv(self):
         resp = float(self.visa.query('SOUR:VOLT:LEV:IMM:AMPL?').strip('\n'))
@@ -62,6 +66,11 @@ class Keithley2400:
     def read_i(self):
         resp = str(self.visa.query('READ?').strip('\n'))
         val = float(resp.split(',')[1])
+        return val
+    
+    def read_v(self):
+        resp = str(self.visa.query('READ?').strip('\n'))
+        val = float(resp.split(',')[0])
         return val
         
     def write_Vrange(self, val):
