@@ -67,7 +67,7 @@ class Keithley2400:
     def write_Vrange(self, val):
         if val in ['MAX', 'max', 'maximum', '210']:
             self.visa.write('SOUR:VOLT:RANG MAX\n')
-        if val in ['DEF', 'def', 'default,', '21']
+        if val in ['DEF', 'def', 'default,', '21']:
             self.visa.write('SOUR:VOLT:RANG DEF\n')
         if val in ['MIN', 'min', 'minimum']:
             self.visa.write('SOUR:VOLT:RANG MIN\n')
