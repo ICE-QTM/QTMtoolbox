@@ -24,7 +24,7 @@ The plot tool has a few useful keyboard shortcuts!
 * Ctrl+L : toggle live plotting on/off
 
 ## Requirements / Installation
-To run the QTMtoolbox, we recommend the installation of Python 3.x through the Anaconda distribution. To use the live plotting tool as a standalone application, tick "Add Anaconda to system PATH" during the installation of Anaconda, or edit the Environment Variables manually.
+To run the QTMtoolbox, we recommend the installation of Python 3.x through the [Anaconda distribution](https://www.anaconda.com/distribution/). To use the live plotting tool as a standalone application, tick "Add Anaconda to system PATH" during the installation of Anaconda, or edit the Environment Variables manually.
 
 By using the Anaconda prompt, install the following packages
 * pyqt5
