@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Module to interact with the Oxford MercuryiPS.
-Uses TCP/IP sockets to communicate with the device.
+Uses GPIB to communicate with the device.
 
-Version 1.0 (2018-12-05)
+Version 1.1 (2020-04-14)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
