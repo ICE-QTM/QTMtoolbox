@@ -23,6 +23,15 @@ The plot tool has a few useful keyboard shortcuts!
 * Ctrl+A : enable auto rescale: the figure will continuously rescale when new data is added through the live plotting
 * Ctrl+L : toggle live plotting on/off
 
+## Requirements / Installation
+To run the QTMtoolbox, we recommend the installation of Python 3.x through the Anaconda distribution. To use the live plotting tool as a standalone application, tick "Add Anaconda to system PATH" during the installation of Anaconda, or edit the Environment Variables manually.
+
+By using the Anaconda prompt, install the following packages
+* pyqt5
+* pyqtgraph
+* pyvisa
+* pyserial
+
 ## Documentation
 A manual is supplied to help new users to setup their measurements. The manual also contains an overview of all instruments, functions, etc.
 * **Manual** is a PDF file containing detailed information about how to use this Toolbox.
