@@ -8,9 +8,10 @@ Available functions:
     sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, scale='lin')
     waitfor(device, variable, setpoint, threshold=0.05, tmin=60)
     record(dt, npoints, filename)
+    multisweep(sweep_list, npoints, filename)
     megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard')
 
-Version 1.9 (2020-01-26)
+Version 2.0 (2020-04-23)
 
 Contributors:
 Daan Wielens   - PhD at ICE/QTM - daan@daanwielens.com
