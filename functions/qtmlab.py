@@ -74,7 +74,7 @@ def move(device, variable, setpoint, rate):
     if devtype == 'ips120':
         read_command = getattr(device, 'read_' + variable)
         cur_val = float(read_command())
-        
+
         #Convert rate per second to rate per minute (ips rate is in T/m)
         ratepm = round(rate * 60, 3)
         if ratepm >= 0.4:
@@ -111,17 +111,17 @@ def move(device, variable, setpoint, rate):
     # Oxford MercuryiPS Controller - alternative approach
     """
     Since the VRM (even when operated over GPIB/ethernet) also does not move to
-    setpoints instantly, we implement a similar move command as we did for the 
-    ips120 power supply. 
-    Here, we calculate the rate and send this rate and the new setpoint to the 
-    power supply. We then check whether the magnet's state is "Moving" (i.e. at 
+    setpoints instantly, we implement a similar move command as we did for the
+    ips120 power supply.
+    Here, we calculate the rate and send this rate and the new setpoint to the
+    power supply. We then check whether the magnet's state is "Moving" (i.e. at
     least one of the magnet's axes' state is RTOS (ramp to setpoint) or whether
     the state is "Hold" - only if the state is "Hold", the move command is finished).
-    
+
     Sometimes, the magnet does not move correctly, so when it says RTOS but is
     not changing its setpoint, we set the magnet to HOLD and then try again. This
     is not very nice, but it circumvents the issues for the moment.
-    
+
     Currently, one can only move fvalueX, fvalueY, fvalueZ, but not "vector".
     """
     #---------------------------------------------------------------------------
@@ -129,20 +129,20 @@ def move(device, variable, setpoint, rate):
     if devtype == 'MercuryiPS':
         read_command = getattr(device, 'read_' + variable)
         cur_val = float(read_command())
-        
+
         ratepm = round(rate * 60, 3)
         if ratepm >= 0.2:
             ratepm = 0.2
         if ratepm == 0:
             ratepm = 0.1
-            
-        # This line really only works for fvalue{X,Y,Z}    
+
+        # This line really only works for fvalue{X,Y,Z}
         write_rate = getattr(device, 'write_rate' + variable[-1])
         write_rate(ratepm)
-        
+
         write_command = getattr(device, 'write_' + variable)
         write_command(setpoint)
-        
+
         #Check if the magnet reached its setpoint
         reached = False
         cntr = 0 # Initialise counter
@@ -172,16 +172,16 @@ def move(device, variable, setpoint, rate):
                     print('   Mercury iPS: performed "HOLD / RTOS" sequence.')
                 else:
                     prev_val = new_val
-      
+
     #---------------------------------------------------------------------------
 
     # Devices that can apply a setpoint instantly
     """
-    The script below applies to most devices, which can apply a given setpoint 
+    The script below applies to most devices, which can apply a given setpoint
     instantly. Here, we can not supply a 'rate' to the device, but we create
     a linspace of setpoints and push them to the device at a regular interval.
     """
-    
+
     # Get current Value
     read_command = getattr(device, 'read_' + variable)
     cur_val = float(read_command())
@@ -312,17 +312,17 @@ def record(dt, npoints, filename, append=False, md=None, silent=False):
     if silent:
         print('   Silent mode enabled. Measurements will not be logged in the console.')
     # Trick to make sure that dictionary loading is handled properly at startup
-    
+
     if md is None:
         md = meas_dict
-        
+
     # Make sure that the datafile is stored in the 'Data' folder
     filename = 'Data/' + filename
-    
+
     if append == False:
         # Initialise datafile
         filename = checkfname(filename)
-    
+
         # Build header
         header = 'time'
         for dev in md:
@@ -334,7 +334,7 @@ def record(dt, npoints, filename, append=False, md=None, silent=False):
             swcmd = 'record data with dt = ' + str(dt) + ' s for max ' + str(npoints) + ' datapoints'
             file.write(swcmd + '\n')
             file.write(header + '\n')
-            
+
     # Perform record
     for i in range(npoints):
         if not silent:
@@ -349,7 +349,7 @@ def multisweep(sweep_list, npoints, filename, md=None):
     """
     The multisweep command sweeps multiple variables simultaneously. The sweep list contains
     all variables, along with their parameters, also stored in a list. An example could be
-    
+
         sweep_list = [
                         [dev1, var1, start1, stop1, rate1, sweepdev1],
                         [dev2, var2, start2, stop2, rate2, sweepdev2],
@@ -358,16 +358,16 @@ def multisweep(sweep_list, npoints, filename, md=None):
                      ]
 
     The command moves all devices to their respective setpoints, takes a single measurement
-    and then moves all devices again to their next setpoint. 
-    """        
-    print('Starting a multisweep.')  
+    and then moves all devices again to their next setpoint.
+    """
+    print('Starting a multisweep.')
 
     if md is None:
         md = meas_dict
 
     filename = 'Data/' + filename
     filename = checkfname(filename)
-    
+
     header = ''
     for sweepvar in sweep_list:
         if header == '':
@@ -382,37 +382,37 @@ def multisweep(sweep_list, npoints, filename, md=None):
         swcmd = 'multisweep scan' # Implement this!
         file.write(swcmd + '\n')
         file.write(header + '\n')
-        
+
     # Move variables to initial value
     for sweepvar in sweep_list:
         move(sweepvar[0], sweepvar[1], sweepvar[2], sweepvar[4])
-        
+
     # Create sweep curves
     sweep_curve_list = []
     for sweepvar in sweep_list:
         sweep_curve = np.linspace(sweepvar[2], sweepvar[3], npoints)
         sweep_curve_list.append(sweep_curve)
-        
+
     # Perform sweep
     for i in range(npoints):
         # Move to the measurement values
-        print('Sweeping all variables. First variable to: {}'.format(sweep_curve_list[0][i]))
+        print('   Sweeping all variables. First variable to: {}'.format(sweep_curve_list[0][i]))
         for j in range(len(sweep_list)):
             move(sweep_list[j][0], sweep_list[j][1], sweep_curve_list[j][i], sweep_list[j][4])
         # Wait, then measure
-        print('   Waiting for measurement...')
+        print('      Waiting for measurement...')
         time.sleep(dtw)
-        print('   Performing measurement.')
+        print('      Performing measurement.')
         data_setp = np.array([])
         for j in range(len(sweep_list)):
             data_setp = np.append(data_setp, sweep_curve_list[j][i])
         data = np.hstack((data_setp, measure()))
-        
+
         # Add data to file
         datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
         with open(filename, 'a') as file:
-            file.write(datastr + '\n')        
-        
+            file.write(datastr + '\n')
+
 def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard', md=None):
     """
     The megasweep command sweeps two variables. Variable 1 is the "slow" variable.
@@ -541,6 +541,103 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
                     datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
                     with open(filename, 'a') as file:
                         file.write(datastr + '\n')
+
+
+def multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename, md=None):
+    """
+    The multimegasweep combines the two-axis measurements of the megasweep with the possibility
+    of the multisweep to sweep multiple variables simultaneously. Both megasweep axes hold a
+    sweep_list and can thus in principle have multiple variables that can be changed.
+
+    An example sweep_list is:
+
+        sweep_list = [
+                        [dev1, var1, start1, stop1, rate1, sweepdev1],
+                        [dev2, var2, start2, stop2, rate2, sweepdev2],
+                        [dev3, var3, start3, stop3, rate3, sweepdev3],
+                        ....
+                     ]
+
+    Just as with the multisweep, we move all devices to their setpoint successively and then
+    perform a single measurement.
+
+    Regarding the megasweep: only the 'standard' mode is implemented below.
+    """
+    print('Starting a multimegasweep.')
+
+    if md is None:
+        md = meas_dict
+
+    filename = 'Data/' + filename
+    filename = checkfname(filename)
+
+    # Construct header
+    header = ''
+    for sweepvar in sweep_list1:
+        if header == '':
+            header = sweepvar[5]
+        else:
+            header = header + ', ' + sweepvar[5]
+    for sweepvar in sweep_list2:
+        header = header + ', ' + sweepvar[5]
+    for dev in md:
+        header = header + ', ' + dev
+    with open(filename, 'w') as file:
+        dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+        file.write(dtm + '\n')
+        swcmd = 'multimegasweep scan' # Implement this!
+        file.write(swcmd + '\n')
+        file.write(header + '\n')
+
+    # Move variables to initial value
+    print('Moving variables of sweep_list1 to their initial values...')
+    for sweepvar in sweep_list1:
+        move(sweepvar[0], sweepvar[1], sweepvar[2], sweepvar[4])
+    print('Moving variables of sweep_list2 to their initial values...')
+    for sweepvar in sweep_list2:
+        move(sweepvar[0], sweepvar[1], sweepvar[2], sweepvar[4])
+
+    # Create sweep curves
+    sweep_curve_list1 = []
+    for sweepvar in sweep_list1:
+        sweep_curve = np.linspace(sweepvar[2], sweepvar[3], npoints1)
+        sweep_curve_list1.append(sweep_curve)
+    print(sweep_curve_list1)
+    sweep_curve_list2 = []
+    for sweepvar in sweep_list2:
+        sweep_curve = np.linspace(sweepvar[2], sweepvar[3], npoints2)
+        sweep_curve_list2.append(sweep_curve)
+
+    # --- Perform megasweep ---
+    # Sweep slow axis
+    for i in range(npoints1):
+        # Move to the measurement values
+        print('   Sweeping all "list1" variables. First variable to: {}'.format(sweep_curve_list1[0][i]))
+        for j in range(len(sweep_list1)):
+            move(sweep_list1[j][0], sweep_list1[j][1], sweep_curve_list1[j][i], sweep_list1[j][4])
+
+        # Sweep fast axis
+        for k in range(npoints2):
+            # Move to the measurement values
+            print('   Sweeping all "list2" variables. First variable to: {}'.format(sweep_curve_list2[0][k]))
+            for l in range(len(sweep_list2)):
+                move(sweep_list2[l][0], sweep_list2[l][1], sweep_curve_list2[l][k], sweep_list2[l][4])
+            # Wait, then measure
+            print('      Waiting for measurement...')
+            time.sleep(dtw)
+            print('      Performing measurement.')
+            
+            data_setp = np.array([])
+            for m in range(len(sweep_list1)):
+                data_setp = np.append(data_setp, sweep_curve_list1[m][i])
+            for n in range(len(sweep_list2)):
+                data_setp = np.append(data_setp, sweep_curve_list2[n][k])
+            data = np.hstack((data_setp, measure()))
+
+            #Add data to file
+            datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
+            with open(filename, 'a') as file:
+                file.write(datastr + '\n')
 
 def generate_meas_dict(globals_dict, meas_list):
     """
