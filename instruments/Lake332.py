@@ -45,9 +45,17 @@ class Lake332:
 
     def close(self):
         self.visa.close()
+        
+    def query(self, val):
+        resp = self.visa.query(val).strip('\n')
+        return resp
 
     def read_temp(self):
         resp = float(self.visa.query('KRDG? A'))
+        return resp
+   
+    def read_tempB(self):
+        resp = float(self.visa.query('KRDG? B'))
         return resp
 
     def write_PID(self, P, I, D):
