@@ -3,7 +3,7 @@
 Module to interact with a Agilent33220A series waveform generator.
 Uses pyVISA to communicate with the GPIB device.
 
-Version 1.0 (2020-06-11)
+Version 1.1 (2020-06-15)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -100,6 +100,18 @@ class Agilent33220A:
     def read_output(self):
         resp = self.visa.query('OUTP?').strip('\n')
         return resp
+    
+    def read_load(self):
+        resp = self.visa.query('OUTP:LOAD?').strip('\n')
+        # Note that the device returns 9.9E+37 if the load is INF.
+        return resp
+    
+    def write_load(self, val):
+        if val == 'INF':
+            self.visa.write('OUTP:LOAD INF')
+        else:
+            val = float(val)
+            self.visa.write('OUTP:LOAD' + str(val))
     
     def square(self, amp, offset, freq, dutycycle=50):
         self.write_waveform('SQU')
