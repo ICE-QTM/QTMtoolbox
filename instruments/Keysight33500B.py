@@ -78,12 +78,24 @@ class Keysight33500B:
             print('Warning! Function type not recognised.')
 
     def read_dutycycle(self):
+        # Only for square waves
         resp = float(self.visa.query('SOUR:FUNC:SQU:DCYC?'))
         return resp
 
     def write_dutycycle(self, val):
+        # Only for square waves
         val = float(val)
         self.visa.write('SOUR:FUNC:SQU:DCYC ' + str(val))
+        
+    def read_symm(self):
+        # Only for ramp waves
+        resp = float(self.visa.query('SOUR:FUNC:RAMP:SYMM?'))
+        return resp
+
+    def write_symm(self, val):
+        # Only for ramp waves
+        val = float(val)
+        self.visa.write('SOUR:FUNC:RAMP:SYMM ' + str(val))
 
     def read_output(self):
         resp = self.visa.query('OUTP?').strip('\n')
