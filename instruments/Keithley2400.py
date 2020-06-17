@@ -80,3 +80,15 @@ class Keithley2400:
             self.visa.write('SOUR:VOLT:RANG DEF\n')
         if val in ['MIN', 'min', 'minimum']:
             self.visa.write('SOUR:VOLT:RANG MIN\n')
+
+    def read_output(self):
+        resp = int(self.visa.query('OUTP?').strip('\n'))
+        return resp
+
+    def write_output(self, val):
+        if val in [1, 'On', 'ON', 'on']:
+            self.visa.write('OUTP 1\n')
+        elif val in [0, 'Off', 'OFF', 'off']:
+            self.visa.write('OUTP 0\n')
+        else:
+            print('This is not a valid argument for the Keithley Output command. Your command will be ignored.')
