@@ -8,10 +8,11 @@ Available functions:
     sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, scale='lin')
     waitfor(device, variable, setpoint, threshold=0.05, tmin=60)
     record(dt, npoints, filename)
+    record_until(dt, filename, device, variable, operator, value, maxnpoints)
     multisweep(sweep_list, npoints, filename)
     megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard')
 
-Version 2.0 (2020-04-23)
+Version 2.1 (2020-07-13)
 
 Contributors:
 Daan Wielens   - PhD at ICE/QTM - daan@daanwielens.com
@@ -345,6 +346,62 @@ def record(dt, npoints, filename, append=False, md=None, silent=False):
             file.write(datastr + '\n')
         time.sleep(dt)
 
+def record_until(dt, filename, device, variable, operator, value, maxnpoints, md=None):
+    """
+    The record command records data with a time interval of <dt> seconds. It
+    will record data for a number of <npoints> and store it in <filename>.
+    """
+    print('Recording data until ' + variable + ' ' + operator + ' ' + str(value) + '.')
+    # Trick to make sure that dictionary loading is handled properly at startup
+    if md is None:
+        md = meas_dict
+        
+    # Make sure that the datafile is stored in the 'Data' folder
+    filename = 'Data/' + filename 
+
+    # Initialise datafile
+    filename = checkfname(filename)
+
+    # Build header
+    header = 'time'
+    for dev in md:
+        header = header + ', ' + dev
+    # Write header to file
+    with open(filename, 'w') as file:
+        dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+        file.write(dtm + '\n')
+        swcmd = 'record_until data with dt = ' + str(dt) + ' s for max ' + str(maxnpoints) + ' datapoints'
+        file.write(swcmd + '\n')
+        file.write(header + '\n')
+    
+    reached = False 
+    i = 0      
+    # Perform record
+    while not reached:
+        print('Performing measurement at t = ' + str(i*dt) + ' s.')
+        data = measure()
+        datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ')[1:-1]).replace('\n', '')
+        with open(filename, 'a') as file:
+            file.write(datastr + '\n')
+        i += 1
+        time.sleep(dt)
+        
+        # Check for given criterion
+        read_command = getattr(device, 'read_' + variable)
+        cur_val = float(read_command())
+        
+        if operator in ['larger', '>']:
+            if cur_val > value:
+                reached = True
+        if operator in ['smaller', '<']:
+            if cur_val < value:
+                reached = True
+        if operator in ['equal', '=', '==']:
+            if cur_val == value:
+                reached = True
+        if i > maxnpoints:
+            reached = True        
+        
 def multisweep(sweep_list, npoints, filename, md=None):
     """
     The multisweep command sweeps multiple variables simultaneously. The sweep list contains
