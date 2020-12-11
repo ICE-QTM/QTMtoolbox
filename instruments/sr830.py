@@ -134,6 +134,10 @@ class sr830:
         while abs(rval) > 0.9*sens_val:
             changed = 1
             cur_sens += 1
+            # If cur_sens > 26, we are already at the max sensitivity (1 V). Print warning and return value
+            if cur_sens > 26:
+                print(' --- Warning! Lock-in (GPIB: ' + str(self.GPIBnum) + ') auto_x failed to change the range because it is already at the maximum range. --- ')
+                return float(self.visa.query('OUTP?1').strip('\n').strip('\r'))
             self.visa.write('SENS ' + str(cur_sens) + '\n')
             time.sleep(5) # System must stabilise again
             rval = float(self.visa.query('OUTP?3').strip('\n').strip('\r'))
@@ -142,6 +146,10 @@ class sr830:
         while abs(rval) < 0.1*sens_val:
             changed = 1
             cur_sens -= 1
+            # If cur_sens < 0, we are already at the min sensitivity (2 nV). Print warning and return value
+            if cur_sens < 0:
+                print(' --- Warning! Lock-in  (GPIB: ' + str(self.GPIBnum) + ')auto_x failed to change the range because it is already at the minimum range. --- ')
+                return float(self.visa.query('OUTP?1').strip('\n').strip('\r'))
             self.visa.write('SENS ' + str(cur_sens) + '\n')
             time.sleep(5) # System must stabilise again
             rval = float(self.visa.query('OUTP?3').strip('\n').strip('\r'))
