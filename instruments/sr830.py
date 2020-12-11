@@ -5,7 +5,7 @@ Uses pyVISA to communicate with the GPIB device.
 Assumes GPIB address is of the form GPIB0::<xx>::INSTR where
 <xx> is the device address (number).
 
-Version 1.1 (2018-09-09)
+Version 1.2 (2020-12-11)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
