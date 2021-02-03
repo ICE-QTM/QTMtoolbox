@@ -5,7 +5,7 @@ Uses pyVISA to communicate with the GPIB device.
 Assumes GPIB address is of the form GPIB0::<xx>::INSTR where
 <xx> is the device address (number).
 
-Version 1.0 (2018-10-16)
+Version 1.1 (2021-02-03)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -41,5 +41,17 @@ class hp34401A:
         self.visa.close()
 
     def read_dcv(self):
-        resp = float(self.visa.query('MEAS:VOLT:DC?'))
+        resp = float(self.visa.query('READ?'))
         return resp
+
+    def query(self, val):
+        resp = self.visa.query(val).strip('\n')
+        return resp
+    
+    def read_dcInputImp(self):
+        resp = int(self.visa.query('INP:IMP:AUTO?'))
+        return resp
+    
+    def write_dcInputImp(self, val):
+        self.visa.write('INP:IMP:AUTO ' + str(val))
+        
