@@ -558,6 +558,43 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
                 with open(filename, 'a') as file:
                     file.write(datastr + '\n')
 
+    elif mode=='updownsplit':
+        filename2 = filename[:-4] + '_dir2.csv'
+        with open(filename2, 'w') as file:
+            dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+            file.write(dtm + '\n')
+            swcmd = 'Megasweep of (1)' + sweepdev1  + ' from ' + str(start1) + ' to ' + str(stop1) + ' in ' + str(npoints1)  +' steps with rate ' + str(rate1) + 'and (2) ' + sweepdev2  + ' from ' + str(start2) + ' to ' + str(stop2) + ' in ' + str(npoints2)  +' steps with rate ' + str(rate2)
+            file.write(swcmd + '\n')
+            file.write(header + '\n')
+        
+        for i in range(npoints1):
+            # Move device1 to value1
+            print('Measuring for device 1 at {}'.format(sweep_curve1[i]))
+            move(device1, variable1, sweep_curve1[i], rate1)
+            time.sleep(5*dtw)
+            # Sweep variable2
+            #   We create a linspace that replaces the range: the linspace goes back and forth
+            sweep_curve2ud = np.hstack((sweep_curve2, sweep_curve2[::-1]))
+            for j in range(npoints2*2):
+                # Move device2 to measurement value
+                print('   Sweeping to: {}'.format(sweep_curve2ud[j]))
+                move(device2, variable2, sweep_curve2ud[j], rate2)
+                # Wait, then measure
+                print('      Waiting for measurement...')
+                time.sleep(dtw)
+                print('      Performing measurement.')
+                data = np.hstack((sweep_curve1[i], sweep_curve2ud[j], measure()))
+                
+                #Add data to file
+                # We split the file in the "up" and "down" part of the updown sweep
+                datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
+                if j < npoints2:
+                    with open(filename, 'a') as file:
+                        file.write(datastr + '\n')
+                else:
+                    with open(filename2, 'a') as file:
+                        file.write(datastr + '\n')
+                    
     elif mode=='serpentine':
         z = 0
         for i in range(npoints1):
