@@ -3,12 +3,18 @@
 Module to interact with a Quantum Design PPMS Dynacool system.
 Uses Python for .NET to communicate (install via " pip install pythonnet")
 
-Version 1.0 (2020-11-06)
+Version 1.1 (2021-04-12)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
 
 Based on https://github.com/hinnefe2/ppms and https://github.com/masonlab/labdrivers
+
+Installation requirements:
+- Make sure to install .NET framework 3.5 on the MultiVu computer (for local use)
+- Acquire the QDInstrument.dll file from the Quantum Design Pharos platform and put it in the root of QTMtoolbox
+- Make sure that the QTMtoolbox folder is not read-only (through Properties window of Windows Explorer)
+- Run both Python and MultiVu as administrator
 """
 
 import clr
