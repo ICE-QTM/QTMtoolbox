@@ -54,4 +54,7 @@ class hp34401A:
     
     def write_dcInputImp(self, val):
         self.visa.write('INP:IMP:AUTO ' + str(val))
-        
+    
+    def read_dcv_fast(self):
+        resp = float(self.visa.query('MEAS:VOLT:DC? DEF, Max')) # Chuan: using max resolution to get a fast measurement
+        return resp
