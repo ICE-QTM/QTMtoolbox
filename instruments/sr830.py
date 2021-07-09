@@ -11,7 +11,7 @@ University of Twente
 daan@daanwielens.com
 """
 
-import visa
+import pyvisa as visa
 import time
 import numpy as np
 

@@ -11,7 +11,7 @@ University of Twente
 daan@daanwielens.com
 """
 
-import visa
+import pyvisa as visa
 
 class WrongInstrErr(Exception):
     """
@@ -43,16 +43,15 @@ class si9700:
     def read_tempA(self):
         resp = float(self.visa.query('TA?').strip('TA '))
         return resp
-		
+
     def read_tempB(self):
         resp = float(self.visa.query('TB?').strip('TB '))
         return resp
-		
+
     def read_setp(self):
         resp = float(self.visa.query('SET?').strip('SET '))
         return resp
-		
+
     def write_setp(self, val):
         val = float(val)
         self.visa.write('SET ' + str(val))
-

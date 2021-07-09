@@ -11,7 +11,7 @@ University of Twente
 daan@daanwielens.com
 """
 
-import visa
+import pyvisa as visa
 
 class WrongInstrErr(Exception):
     """
@@ -47,14 +47,14 @@ class hp34401A:
     def query(self, val):
         resp = self.visa.query(val).strip('\n')
         return resp
-    
+
     def read_dcInputImp(self):
         resp = int(self.visa.query('INP:IMP:AUTO?'))
         return resp
-    
+
     def write_dcInputImp(self, val):
         self.visa.write('INP:IMP:AUTO ' + str(val))
-    
+
     def read_dcv_fast(self):
         resp = float(self.visa.query('MEAS:VOLT:DC? DEF, Max')) # Chuan: using max resolution to get a fast measurement
         return resp

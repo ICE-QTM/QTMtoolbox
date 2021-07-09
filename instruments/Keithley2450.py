@@ -11,7 +11,7 @@ University of Twente
 daan@daanwielens.com
 """
 
-import visa
+import pyvisa as visa
 
 class WrongInstrErr(Exception):
     """
@@ -36,7 +36,7 @@ class Keithley2450:
     def get_iden(self):
         resp = str(self.visa.query('*IDN?'))
         return resp
-    
+
     def write_user_display(self, text1, text2):
         self.visa.write('DISP:CLE\n')
         self.visa.write('DISP:USER1:TEXT "' + text1 + '"\n')
@@ -44,14 +44,14 @@ class Keithley2450:
 
     def close(self):
         self.visa.close()
-        
+
     def query(self, val):
         resp = self.visa.query(val).strip('\n')
         return resp
-    
+
     def write(self, val):
         self.visa.write(val)
-    
+
     def read_dcv(self):
         resp = float(self.visa.query('SOUR:VOLT:LEV:IMM:AMPL?').strip('\n'))
         return resp
@@ -60,7 +60,7 @@ class Keithley2450:
         fval = float(val)
         self.visa.write('SOUR:VOLT:LEV ' + str(fval) + '\n')
         self.write_user_display('Usetp = ' + str(fval) + 'V', 'QTMToolbox - Source DC voltage')
-            
+
 
     def read_dci(self):
         resp = float(self.visa.query('SOUR:CURR:LEV:IMM:AMPL?'))
@@ -76,14 +76,14 @@ class Keithley2450:
         resp = str(self.visa.query('READ?').strip('\n'))
         val = float(resp)
         return val
-    
+
     def read_v(self):
         # Note: the read_v is the same! For a Keithley 2450, there is no distinction here!
         # The user is responsible for selecting the right Measure Function on the device.
         resp = str(self.visa.query('READ?').strip('\n'))
         val = float(resp)
         return val
-        
+
     def write_Vrange(self, val):
         if val in ['MAX', 'max', 'maximum', '210']:
             self.visa.write('SOUR:VOLT:RANG MAX\n')
@@ -96,9 +96,9 @@ class Keithley2450:
             # Check if value is a number
             val = float(val)
             self.visa.write('SOUR:VOLT:RANG ' + str(val) + '\n')
-            
-        self.write_user_display('New voltage range!', 'QTMToolbox - Notification')        
-    
+
+        self.write_user_display('New voltage range!', 'QTMToolbox - Notification')
+
     def read_output(self):
         resp = int(self.visa.query('OUTP?').strip('\n'))
         return resp
@@ -111,12 +111,12 @@ class Keithley2450:
             self.visa.write('OUTP 0\n')
             self.write_user_display('Output OFF', 'QTMToolbox - Notification')
         else:
-            print('This is not a valid argument for the Keithley Output command. Your command will be ignored.')  
-            
+            print('This is not a valid argument for the Keithley Output command. Your command will be ignored.')
+
     def read_inttrip(self):
         resp = int(self.visa.query('OUTP:INT:TRIP?\n').strip('\n'))
         return resp
-    
+
     def read_readback(self):
         resp = int(self.visa.query('SOUR:VOLT:READ:BACK?\n').strip('\n'))
         return resp

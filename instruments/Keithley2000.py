@@ -11,7 +11,7 @@ University of Twente
 daan@daanwielens.com
 """
 
-import visa
+import pyvisa as visa
 
 class WrongInstrErr(Exception):
     """
@@ -23,7 +23,7 @@ class WrongInstrErr(Exception):
 
 class Keithley2000:
     type = 'Keithley 2000 Multimeter'
-    
+
     def __init__(self, GPIBaddr):
         rm = visa.ResourceManager()
         self.visa = rm.open_resource('GPIB0::{}::INSTR'.format(GPIBaddr))
@@ -31,16 +31,15 @@ class Keithley2000:
         resp = self.visa.query('*IDN?')
         model = resp.split(',')[1]
         if model != 'MODEL 2000':
-            raise WrongInstrErr('Expected Keithley 2000, got {}'.format(resp))      
-    
+            raise WrongInstrErr('Expected Keithley 2000, got {}'.format(resp))
+
     def get_iden(self):
         resp = str(self.visa.query('*IDN?'))
         return resp
-    
+
     def close(self):
         self.visa.close()
-        
+
     def read_dcv(self):
         resp = float(self.visa.query('SENS:DATA?'))
         return resp
-        

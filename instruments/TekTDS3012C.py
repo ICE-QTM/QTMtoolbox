@@ -9,7 +9,7 @@ University of Twente
 daan@daanwielens.com
 """
 
-import visa
+import pyvisa as visa
 
 class WrongInstrErr(Exception):
     """

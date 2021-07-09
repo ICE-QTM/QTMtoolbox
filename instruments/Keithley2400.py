@@ -11,7 +11,7 @@ University of Twente
 daan@daanwielens.com
 """
 
-import visa
+import pyvisa as visa
 
 class WrongInstrErr(Exception):
     """
@@ -39,7 +39,7 @@ class Keithley2400:
 
     def close(self):
         self.visa.close()
-        
+
     def query(self, val):
         resp = self.visa.query(val).strip('\n')
         return resp
@@ -67,12 +67,12 @@ class Keithley2400:
         resp = str(self.visa.query('READ?').strip('\n'))
         val = float(resp.split(',')[1])
         return val
-    
+
     def read_v(self):
         resp = str(self.visa.query('READ?').strip('\n'))
         val = float(resp.split(',')[0])
         return val
-        
+
     def write_Vrange(self, val):
         if val in ['MAX', 'max', 'maximum', '210']:
             self.visa.write('SOUR:VOLT:RANG MAX\n')

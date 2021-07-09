@@ -9,7 +9,7 @@ University of Twente
 daan@daanwielens.com
 """
 
-import visa
+import pyvisa as visa
 
 class WrongInstrErr(Exception):
     """
@@ -34,7 +34,7 @@ class Keysight33500B:
     def get_iden(self):
         resp = str(self.visa.query('*IDN?'))
         return resp
-    
+
     def query(self, val):
         resp = self.visa.query(val).strip('\n')
         return resp
@@ -86,7 +86,7 @@ class Keysight33500B:
         # Only for square waves
         val = float(val)
         self.visa.write('SOUR:FUNC:SQU:DCYC ' + str(val))
-        
+
     def read_symm(self):
         # Only for ramp waves
         resp = float(self.visa.query('SOUR:FUNC:RAMP:SYMM?'))
@@ -100,26 +100,26 @@ class Keysight33500B:
     def read_output(self):
         resp = self.visa.query('OUTP?').strip('\n')
         return resp
-    
+
     def read_load(self):
         resp = self.visa.query('OUTP:LOAD?').strip('\n')
         # Note that the device returns 9.9E+37 if the load is INF.
         return resp
-    
+
     def write_load(self, val):
         if val == 'INF':
             self.visa.write('OUTP:LOAD INF')
         else:
             val = float(val)
             self.visa.write('OUTP:LOAD' + str(val))
-    
+
     def square(self, amp, offset, freq, dutycycle=50):
         self.write_waveform('SQU')
         self.write_amp(amp)
         self.write_offset(offset)
         self.write_freq(freq)
         self.write_dutycycle(dutycycle)
-        
+
     def sine(self, amp, offset, freq):
         self.write_waveform('SIN')
         self.write_amp(amp)

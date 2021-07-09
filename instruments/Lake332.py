@@ -17,7 +17,7 @@ then cycle through menu with <Enter>):
 - IEEE term:    Cr Lf
 """
 
-import visa
+import pyvisa as visa
 
 class WrongInstrErr(Exception):
     """
@@ -45,7 +45,7 @@ class Lake332:
 
     def close(self):
         self.visa.close()
-        
+
     def query(self, val):
         resp = self.visa.query(val).strip('\n')
         return resp
@@ -53,7 +53,7 @@ class Lake332:
     def read_temp(self):
         resp = float(self.visa.query('KRDG? A'))
         return resp
-   
+
     def read_tempB(self):
         resp = float(self.visa.query('KRDG? B'))
         return resp
@@ -74,6 +74,6 @@ class Lake332:
             self.visa.write('RANGE 2')
         if val in ['High', 'high', 3]:
             self.visa.write('RANGE 3')
-            
+
     def heater_off(self):
         self.visa.write('RANGE 0')
