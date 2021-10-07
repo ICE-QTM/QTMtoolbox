@@ -8,7 +8,11 @@ Assumes the address is of the form COM<xx> where
 We assume that the IVVI rack has 16 DACs.
 Script based on: http://qtwork.tudelft.nl/~schouten/ivvi/doc-d5/rs232linkformat.txt
 
-Version 2.0 (2020-02-05)
+The serial connection is opened/closed after every command. This increases
+the stability of the dac and reduces the chance to setup multiple connections
+to the device.
+
+Version 2.1 (2021-10-07)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -70,37 +74,15 @@ class IVVI:
         else:
             raise ValueError('The <dac> integer must be within 1-16')
 
-    def read_dac1(self):
-        resp = self.read_dacs()
-        resp = resp[0]
-        return resp
+    # Create functions for reading any DAC channel (chan. 1-16) in the system
+    for i in range(16):
+        exec("def read_dac" + str(i+1) + "(self):\n" +
+             "    return(self.read_dac(" + str(i+1) + "))")
 
-    def write_dac1(self, val):
-        self.write_dac(1, val)
-        
-    def read_dac2(self):
-        resp = self.read_dacs()
-        resp = resp[1]
-        return resp
-
-    def write_dac2(self, val):
-        self.write_dac(2, val)
-        
-    def read_dac3(self):
-        resp = self.read_dacs()
-        resp = resp[2]
-        return resp
-
-    def write_dac3(self, val):
-        self.write_dac(3, val)
-        
-    def read_dac4(self):
-        resp = self.read_dacs()
-        resp = resp[3]
-        return resp
-
-    def write_dac4(self, val):
-        self.write_dac(4, val)
+    # Create functions for setting any DAC channel (chan. 1-16) in the system
+    for i in range(16):
+        exec("def write_dac" + str(i+1) + "(self, val):\n" +
+             "    self.write_dac(" + str(i+1) + ", str(val))")
         
     def write_dacszero(self):
         for i in range(16):
