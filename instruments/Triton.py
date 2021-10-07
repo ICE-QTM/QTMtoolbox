@@ -188,7 +188,12 @@ class Triton:
         chan = self.read_Tchan()
         self.s.sendall(('READ:DEV:T' + str(chan) + ':TEMP:LOOP:RAMP:ENAB\r\n').encode())
         resp = self.s.recv(1024).decode().split(':')[-1].strip('\n')
-        return resp
+        if resp == 'ON':
+            return 1
+        elif resp == 'OFF':
+            return 0
+        else:
+            raise ValueError('Expected to receive "ON" or "OFF" but got a different response.')
     
     # Write the control temperature ramp status (use 'ON' or 'OFF' as <val>)
     def write_ratestatus(self, val):
