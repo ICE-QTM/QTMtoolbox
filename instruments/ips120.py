@@ -82,7 +82,7 @@ class ips120:
         resp = float(self.visa.query('R 8').strip('R+').replace('+','').strip('\n').strip('\r'))
         return resp
 
-        def query(self, val):
+    def query(self, val):
         resp = self.visa.query(val)
         return resp
 
