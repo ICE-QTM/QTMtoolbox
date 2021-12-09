@@ -2,7 +2,7 @@
 """
 Main script of the Python QTM measurement toolbox.
 
-Version 2.0 (2020-03-04)
+Version 2.1 (2021-12-09)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -11,25 +11,30 @@ daan@daanwielens.com
 import numpy as np
 
 # Import device definitions
-from instruments.Keith2400 import *
+from instruments.curtime import *
 
 # Connect to devices
-kb = Keithley2400(20)
-kt = Keithley2400(22)
+ct = curtime()
 
 # Define wait time between 'reaching setpoint' and 'taking measurement' (in seconds)
 dtw = 3
 
+# Define sample name
+samplename = '2021-12-09_Test-sample'
+
 # Define what variables need to be measured
-meas_list = 'kb.dcv, kt.dcv, kb.i, kt.i'
+meas_list = 'ct.time, ct.timems'
 
 # Import measurement tools
 from functions import qtmlab
 meas_dict = qtmlab.generate_meas_dict(globals(), meas_list)
 qtmlab.meas_dict = meas_dict
 qtmlab.dtw = dtw
+qtmlab.samplename = samplename
 #%% Batch commands
 """
 Add your batch commands below this comment. Alternatively, run commands individually
 from the IPython console
 """
+
+qtmlab.record(1, 10, 'test.csv')
