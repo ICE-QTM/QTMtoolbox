@@ -12,11 +12,11 @@ Available functions:
     multisweep(sweep_list, npoints, filename)
     megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard')
 
-Version 2.1 (2020-07-13)
+Version 2.2 (2021-12-09)
 
 Contributors:
-Daan Wielens   - PhD at ICE/QTM - daan@daanwielens.com
-Joris Voerman  - PhD at ICE/QTM - j.a.voerman@utwente.nl
+Daan Wielens - Researcher at ICE/QTM - daan@daanwielens.com
+Joris Voerman
 University of Twente
 """
 import time
@@ -30,6 +30,7 @@ meas_dict = {}
 # Global settings
 dt = 0.02           # Move timestep [s]
 dtw = 1             # Wait time before measurement [s]
+samplename = None
 
 # Create Data directory
 if not os.path.isdir('Data'):
@@ -41,17 +42,35 @@ def checkfname(filename):
     This function checks if the to-be-created measurement file already exists.
     If so, it appends a number. For all successive existing (numbered) files,
     it raises the counter
+    ----------
+    New: the filename checker also verifies that the user provides a valid sample identifier
+    so that the data is stored in a correct folder that complies with the
+    data management plan.
     """
+        
+    if not samplename:
+        raise ValueError('No sample identifier was provided. Please provide a sample identifier in the header of your measurement script.')
+    else:
+        sampledate = samplename.split('_')[0]
+        try:
+            dt_obj = datetime.strptime(sampledate, '%Y-%m-%d')
+            # If the sample date is OK, check/create the folder for data storage
+            if not os.path.isdir('Data/' + samplename):
+                os.mkdir('Data/' + samplename)
+        except Exception:
+            raise ValueError('The sample identifier should have the following format: YYYY-MM-DD_<Sample-name>.')
+     
     append_no = 0;
-    while os.path.isfile(filename):
+    new_filename = 'Data/' + samplename + '/' + filename
+    while os.path.isfile(new_filename):
         append_no += 1 #Count the number of times the file already existed
-        filename = filename.split('.')
+        new_filename = new_filename.split('.')
         if append_no == 1: #The first time the program finds the unedited filename. We save it as the base
-            filename_base = filename[0]
-        filename = filename_base + '_' + str(append_no) +'.' + filename[1] #add "_N" to the filename where N is the number of loop iterations
-        if os.path.isfile(filename) == False: #Only when the newly created filename doesn't exist: inform the user. The whileloop stops.
-            print('The file already exists. Filename changed to: ' + filename)
-    return(filename)
+            new_filename_base = new_filename[0]
+        new_filename = new_filename_base + '_' + str(append_no) +'.' + new_filename[1] #add "_N" to the filename where N is the number of loop iterations
+        if os.path.isfile(new_filename) == False: #Only when the newly created filename doesn't exist: inform the user. The whileloop stops.
+            print('The file already exists. Filename changed to: ' + new_filename)
+    return(new_filename)
 
 def move(device, variable, setpoint, rate):
     """
@@ -233,9 +252,6 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
     if md is None:
         md = meas_dict
 
-    # Make sure that the datafile is stored in the 'Data' folder
-    filename = 'Data/' + filename
-
     # Initialise datafile
     filename = checkfname(filename)
 
@@ -312,13 +328,10 @@ def record(dt, npoints, filename, append=False, md=None, silent=False):
     print('Recording data with a time interval of ' + str(dt) + ' seconds for (up to) ' + str(npoints) + ' points. Hit <Ctrl+C> to abort.')
     if silent:
         print('   Silent mode enabled. Measurements will not be logged in the console.')
-    # Trick to make sure that dictionary loading is handled properly at startup
 
+    # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
         md = meas_dict
-
-    # Make sure that the datafile is stored in the 'Data' folder
-    filename = 'Data/' + filename
 
     if append == False:
         # Initialise datafile
@@ -356,9 +369,6 @@ def record_until(dt, filename, device, variable, operator, value, maxnpoints, md
     if md is None:
         md = meas_dict
         
-    # Make sure that the datafile is stored in the 'Data' folder
-    filename = 'Data/' + filename 
-
     # Initialise datafile
     filename = checkfname(filename)
 
@@ -422,7 +432,6 @@ def multisweep(sweep_list, npoints, filename, md=None):
     if md is None:
         md = meas_dict
 
-    filename = 'Data/' + filename
     filename = checkfname(filename)
 
     header = ''
@@ -484,9 +493,6 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
         md = meas_dict
-
-    # Make sure that the datafile is stored in the 'Data' folder
-    filename = 'Data/' + filename
 
     # Initialise datafile
     filename = checkfname(filename)
@@ -662,7 +668,6 @@ def multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename, md=No
     if md is None:
         md = meas_dict
 
-    filename = 'Data/' + filename
     filename = checkfname(filename)
 
     # Construct header
