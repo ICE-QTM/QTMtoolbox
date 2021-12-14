@@ -5,7 +5,7 @@ Created on Tue Apr  7 23:11:25 2020
 
 /--------------------------------------\
 |      Live Plotting of QTM data       |
-|           Version 1.1                |
+|           Version 1.2                |
 |           D.H. Wielens               |
 \--------------------------------------/
 
@@ -181,11 +181,11 @@ class MainWindow(QMainWindow):
     def livePlotting(self):
         # We monitor the folder given here:
         folder = 'Data'
-        files = []
         stamps = []
-        for file in os.listdir(folder):
-            files.append(file)
-            stamps.append(os.path.getmtime(folder + '/' + file))
+        # Get recursive list of files:
+        files = [os.path.join(dp, f) for dp, dn, fn in os.walk('Data') for f in fn]
+        for file in files:
+            stamps.append(os.path.getmtime(file))
         #if len(files) == 0:
         #    return
         # Find which files are .csv
@@ -198,10 +198,10 @@ class MainWindow(QMainWindow):
                     latest_file = f
         # Proceed to plot
         if len(latest_file) > 0:
-            if os.path.abspath(folder + '/' + latest_file) == self.filename:
+            if os.path.abspath(latest_file) == self.filename:
                 self.updateData(self.xindex, self.yindex)
             else:
-                self.filename = os.path.abspath(folder + '/' + latest_file)
+                self.filename = os.path.abspath(latest_file)
                 self.updateData(self.xindex, self.yindex, newFile=True)
             self.file_path.setText(self.filename)
             
