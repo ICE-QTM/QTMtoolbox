@@ -2,8 +2,8 @@
 """
 Main script of the Python QTM measurement toolbox.
 
-Version 2.1 (2021-12-09)
-Daan Wielens - PhD at ICE/QTM
+Version 2.2 (2021-12-14)
+Daan Wielens - Researcher at ICE/QTM
 University of Twente
 daan@daanwielens.com
 """
@@ -20,18 +20,20 @@ ct = curtime()
 dtw = 3
 
 # Define sample name
-samplename = '2021-12-09_Test-sample'
+samplename = '2021-12-14_Test-sample'
 
 # Define what variables need to be measured
 meas_list = 'ct.time, ct.timems'
 
 # Import measurement tools
 from functions import qtmlab
+from functions import qtmstartup
 meas_dict = qtmlab.generate_meas_dict(globals(), meas_list)
 qtmlab.meas_dict = meas_dict
 qtmlab.dtw = dtw
 qtmlab.samplename = samplename
 #%% Batch commands
+qtmstartup.copy_script(__file__, samplename)
 """
 Add your batch commands below this comment. Alternatively, run commands individually
 from the IPython console
