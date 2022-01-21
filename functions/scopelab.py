@@ -3,10 +3,9 @@
 Functions to capture oscilloscope data. The curves are saved into a single
 file within the 'ScopeData' directory.
 
-Version 1.0 (2018-10-11)
-Daan Wielens - PhD at ICE/QTM
+Version 1.1 (2022-01-21)
+Daan Wielens - Researcher at ICE/QTM
 University of Twente
-daan@daanwielens.com
 """
 
 import visa
@@ -14,9 +13,10 @@ import numpy as np
 from struct import unpack
 import matplotlib.pyplot as plt
 import time
+from datetime import datetime
 import os
 
-def getScope(filename, GPIBaddr=1):
+def getScope(filename, samplename, GPIBaddr=1):
     # Connect to device
     rm = visa.ResourceManager()
     tek = rm.open_resource('GPIB0::{}::INSTR'.format(GPIBaddr))
@@ -69,11 +69,24 @@ def getScope(filename, GPIBaddr=1):
     V2 = (ADCwave - yoff) * ymult + yzero
     t2 = np.arange(0, xincr * len(V2), xincr)
 
-    # Save data
-    if not os.path.exists('ScopeData'):
-        os.makedirs('ScopeData')
+    # Check if samplename is correctly formatted
+    if not samplename:
+        raise ValueError('No sample identifier was provided. Please provide a sample identifier in the header of your measurement script.')
+    else:
+        sampledate = samplename.split('_')[0]
+        try:
+            dt_obj = datetime.strptime(sampledate, '%Y-%m-%d')
+            # If the sample date is OK, check/create the folder for data storage
+            if not os.path.isdir('Data/' + samplename):
+                os.mkdir('Data/' + samplename)
+        except Exception:
+            raise ValueError('The sample identifier should have the following format: YYYY-MM-DD_<Sample-name>.')
 
-    with open('ScopeData/' + filename, 'w') as f:
+    # Save data
+    if not os.path.exists('Data/' + samplename + '/ScopeData'):
+        os.makedirs('Data/' + samplename + '/ScopeData')
+
+    with open('Data/' + samplename + '/ScopeData/' + filename, 'w') as f:
         f.write('t1 (s), V1 (V), t2 (s), V2 (V)\n')
         for i in range(0, len(V2)):
             f.write(str(t1[i]) + ',' + str(V1[i]) + ',' +  str(t2[i]) + ',' + str(V2[i]) + '\n')
