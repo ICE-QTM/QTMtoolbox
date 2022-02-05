@@ -27,6 +27,8 @@ import os
 import math
 from datetime import datetime
 
+print('QTMtoolbox version 2.3 (2022-02-05)\n')
+
 meas_dict = {}
 
 # Global settings
