@@ -11,8 +11,10 @@ Available functions:
     record_until(dt, filename, device, variable, operator, value, maxnpoints)
     multisweep(sweep_list, npoints, filename)
     megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard')
+    multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename)
+    snapshot()
 
-Version 2.2 (2021-12-09)
+Version 2.3 (2022-02-05)
 
 Contributors:
 Daan Wielens - Researcher at ICE/QTM - daan@daanwielens.com
@@ -257,13 +259,17 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
 
     # Create header
     header = sweepdev
+    # The string 'setget' contains a "s" when the column is set during the measurement (i.e. a setpoint),
+    # and it is a "g" when it retrieved (get) during the measurement.
+    setget = 's'
     # Add device of 'meas_list'
     for dev in md:
         header = header + ', ' + dev
+        setget = setget + 'g'
     # Write header to file
     with open(filename, 'w') as file:
         dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
-        file.write(dtm + '\n')
+        file.write(dtm + '|' + setget + '\n')
         swcmd = 'sweep of ' + sweepdev  + ' from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' steps ('+ str(scale) + ' spacing)' +' with rate ' + str(rate)
         file.write(swcmd + '\n')
         file.write(header + '\n')
@@ -339,12 +345,14 @@ def record(dt, npoints, filename, append=False, md=None, silent=False):
 
         # Build header
         header = 'time'
+        setget = 's'
         for dev in md:
             header = header + ', ' + dev
+            setget = setget + 'g'
         # Write header to file
         with open(filename, 'w') as file:
             dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
-            file.write(dtm + '\n')
+            file.write(dtm + '|' + setget + '\n')
             swcmd = 'record data with dt = ' + str(dt) + ' s for max ' + str(npoints) + ' datapoints'
             file.write(swcmd + '\n')
             file.write(header + '\n')
@@ -374,12 +382,14 @@ def record_until(dt, filename, device, variable, operator, value, maxnpoints, md
 
     # Build header
     header = 'time'
+    setget = 's'
     for dev in md:
         header = header + ', ' + dev
+        setget = setget + 'g'
     # Write header to file
     with open(filename, 'w') as file:
         dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
-        file.write(dtm + '\n')
+        file.write(dtm + '|' + setget + '\n')
         swcmd = 'record_until data with dt = ' + str(dt) + ' s for max ' + str(maxnpoints) + ' datapoints'
         file.write(swcmd + '\n')
         file.write(header + '\n')
@@ -435,16 +445,20 @@ def multisweep(sweep_list, npoints, filename, md=None):
     filename = checkfname(filename)
 
     header = ''
+    setget = ''
     for sweepvar in sweep_list:
         if header == '':
             header = sweepvar[5]
+            setget = 's'
         else:
             header = header + ', ' + sweepvar[5]
+            setget = setget + 's'
     for dev in md:
         header = header + ', ' + dev
+        setget = setget + 'g'
     with open(filename, 'w') as file:
         dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
-        file.write(dtm + '\n')
+        file.write(dtm + '|' + setget + '\n')
         swcmd = 'multisweep scan' # Implement this!
         file.write(swcmd + '\n')
         file.write(header + '\n')
@@ -499,13 +513,15 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
 
     # Create header
     header = sweepdev1 + ', ' + sweepdev2
+    setget = 'ss'
     # Add device of 'meas_list'
     for dev in md:
         header = header + ', ' + dev
+        setget = setget + 'g'
     # Write header to file
     with open(filename, 'w') as file:
         dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
-        file.write(dtm + '\n')
+        file.write(dtm + '|' + setget + '\n')
         swcmd = 'Megasweep of (1)' + sweepdev1  + ' from ' + str(start1) + ' to ' + str(stop1) + ' in ' + str(npoints1)  +' steps with rate ' + str(rate1) + 'and (2) ' + sweepdev2  + ' from ' + str(start2) + ' to ' + str(stop2) + ' in ' + str(npoints2)  +' steps with rate ' + str(rate2)
         file.write(swcmd + '\n')
         file.write(header + '\n')
@@ -672,18 +688,23 @@ def multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename, md=No
 
     # Construct header
     header = ''
+    setget = ''
     for sweepvar in sweep_list1:
         if header == '':
             header = sweepvar[5]
+            setget = 's'
         else:
             header = header + ', ' + sweepvar[5]
+            setget = setget + 's'
     for sweepvar in sweep_list2:
         header = header + ', ' + sweepvar[5]
+        setget = setget + 's'
     for dev in md:
         header = header + ', ' + dev
+        setget = setget + 'g'
     with open(filename, 'w') as file:
         dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
-        file.write(dtm + '\n')
+        file.write(dtm + '|' + setget + '\n')
         swcmd = 'multimegasweep scan' # Implement this!
         file.write(swcmd + '\n')
         file.write(header + '\n')
@@ -751,5 +772,41 @@ def generate_meas_dict(globals_dict, meas_list):
         var = split[1]
         dev = globals_dict[devstring]
         meas_dict[devvar] = {'dev': dev,
-                             'var': var}
+                             'var': var,
+                             'name': devstring}
     return meas_dict
+
+def snapshot(md=None):
+    """
+    Stores a snapshot of all the measurement setup's parameters. For every 
+    unique device in the measurement dictionary (meas_dict), all attributes
+    that contain "_read" will be measured and stored in a single text file.
+    This includes "_read" commands that are not present in the meas_dict itself.
+    """
+    if md is None:
+        md = meas_dict
+    
+    # Get list with unique devices
+    dev_obj_list = [] 
+    dev_name_list = []               
+    for device in md:      
+        if md[device]['dev'] not in dev_obj_list:
+            dev_obj_list.append(md[device]['dev'])
+            dev_name_list.append(md[device]['name'])
+    
+    # Create file
+    timestamp = datetime.now().strftime('%Y-%d-%m-%H%M%S')
+    with open(checkfname(timestamp + 'Snapshot.txt'), 'w') as file:
+        
+        # For each device, get all "read_" attributes
+        for [devobj, devname]  in zip(dev_obj_list, dev_name_list):
+            attr_list = [attr for attr in dir(devobj) if 'read_' in attr and not 'auto' in attr]
+            # Loop over attributes, measure property, write to file
+            for attr in attr_list:
+                meas_command = getattr(devobj, attr)
+                data = meas_command()
+                file.write(devname + '.' + attr + ': ' + str(data) + '\n')
+            
+    
+        
+    
