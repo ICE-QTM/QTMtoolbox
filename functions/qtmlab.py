@@ -14,7 +14,7 @@ Available functions:
     multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename)
     snapshot()
 
-Version 2.3 (2022-02-05)
+Version 2.3.1 (2022-02-07)
 
 Contributors:
 Daan Wielens - Researcher at ICE/QTM - daan@daanwielens.com
@@ -802,12 +802,14 @@ def snapshot(md=None):
         
         # For each device, get all "read_" attributes
         for [devobj, devname]  in zip(dev_obj_list, dev_name_list):
-            attr_list = [attr for attr in dir(devobj) if 'read_' in attr and not 'auto' in attr]
+            attr_list = [attr for attr in dir(devobj) if 'read_' in attr]
             # Loop over attributes, measure property, write to file
             for attr in attr_list:
-                meas_command = getattr(devobj, attr)
-                data = meas_command()
-                file.write(devname + '.' + attr + ': ' + str(data) + '\n')
+                # Skip  type objects
+                if not 'auto' in attr and not 'read_dacs' in attr and attr != 'read_dac':
+                    meas_command = getattr(devobj, attr)
+                    data = meas_command()
+                    file.write(devname + '.' + attr + ': ' + str(data) + '\n')
             
     
         
