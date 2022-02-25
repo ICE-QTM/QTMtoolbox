@@ -72,7 +72,7 @@ class Dynacool:
         resp = self.qdi_instrument.GetPosition("Horizontal Rotator", 0, 0)[1]
         return resp
     
-    def write_position(self, position, speed, mode=0):
+    def write_position(self, position, speed=10, mode=0):
         # Mode: 0 = GoToPosition, 1 = MoveToLimitAndDefinePosition, 2 = DefinePosition
         self.qdi_instrument.SetPosition("Horizontal Rotator", position, speed, mode)
         
