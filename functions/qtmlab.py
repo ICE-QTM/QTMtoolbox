@@ -761,6 +761,91 @@ def multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename, md=No
             with open(filename, 'a') as file:
                 file.write(datastr + '\n')
 
+def megalistsweep(sweep_list, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev2, mode='standard', md=None):
+    """
+    The megalistsweep command sweeps multiple variables simultaneously. The sweep list contains
+    all variables, along with their parameters, also stored in a list. An example could be
+
+        sweep_list = [
+                        [dev1, var1, <list of points>, rate1, sweepdev1],
+                        [dev2, var2, <list of points>, rate2, sweepdev2],
+                        [dev3, var3, <list of points>, rate3, sweepdev3],
+                        ....
+                     ]
+
+    The command moves all devices to their respective setpoints, takes a single measurement
+    and then moves all devices again to their next setpoint.
+    """
+    print('Starting a "' + mode + '" megalistsweep of the following variables:')
+#    print('1: "' + sweeplist[0] + '" from ' + str(start1) + ' to ' + str(stop1) + ' in ' + str(npoints1) + ' steps with rate ' + str(rate1))
+    print('2: "' + variable2 + '" from ' + str(start2) + ' to ' + str(stop2) + ' in ' + str(npoints2) + ' steps with rate ' + str(rate2))
+
+    # Trick to make sure that dictionary loading is handled properly at startup
+    print('Starting a megalistsweep.')
+
+    if md is None:
+        md = meas_dict
+        
+    filename = checkfname(filename)
+
+    header = ''
+    for sweepvar in sweep_list:
+        if header == '':
+            header = sweepvar[4]
+        else:
+            header = header + ', ' + sweepvar[4]
+    header = header+  ', '+ sweepdev2
+
+    for dev in md:
+        header = header + ', ' + dev
+    with open(filename, 'w') as file:
+        dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+        file.write(dtm + '\n')
+        swcmd = 'multilistsweep scan' # Implement this!
+        file.write(swcmd + '\n')
+        file.write(header + '\n')
+
+    # Move variables to initial value
+    for sweepvar in sweep_list:
+        move(sweepvar[0], sweepvar[1], sweepvar[2][0], sweepvar[3])
+
+    # Create sweep curves
+    sweep_curve_list = []
+    for sweepvar in sweep_list:
+        sweep_curve = sweepvar[2]
+        sweep_curve_list.append(sweep_curve)
+        npoints = len(sweep_curve)
+
+    sweep_curve2 = np.linspace(start2, stop2, npoints2)
+    if mode=='standard':
+        for i in range(npoints):
+            # Move to the measurement values
+            print('   Sweeping all variables. First variable to: {}'.format(sweep_curve_list[0][i]))
+            for j in range(len(sweep_list)):
+                move(sweep_list[j][0], sweep_list[j][1], sweep_curve_list[j][i], sweep_list[j][3])
+            # Wait, then measure
+            print('      Waiting for measurement...')
+            time.sleep(dtw)
+            print('      Performing measurement.')
+            data_setp = np.array([])
+            for j in range(len(sweep_list)):
+                data_setp = np.append(data_setp, sweep_curve_list[j][i])
+            
+            for k in range(npoints2):
+                # Move device2 to measurement value
+                print('   Sweeping to: {}'.format(sweep_curve2[k]))
+                move(device2, variable2, sweep_curve2[k], rate2)
+                # Wait, then measure
+                print('      Waiting for measurement...')
+                time.sleep(dtw)
+                print('      Performing measurement.')
+                data = np.hstack((data_setp, sweep_curve2[k], measure()))
+
+                #Add data to file
+                datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
+                with open(filename, 'a') as file:
+                    file.write(datastr + '\n')                
+                
 def generate_meas_dict(globals_dict, meas_list):
     """
     Generates meas_dict from more compact meas_list.
