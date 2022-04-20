@@ -14,7 +14,7 @@ Available functions:
     multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename)
     snapshot()
 
-Version 2.3.1 (2022-02-07)
+Version 2.4 (2022-04-20)
 
 Contributors:
 Daan Wielens - Researcher at ICE/QTM - daan@daanwielens.com
@@ -27,7 +27,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.3 (2022-02-05)\n')
+print('QTMtoolbox version 2.4 (2022-04-20)\n')
 
 meas_dict = {}
 
@@ -217,10 +217,18 @@ def move(device, variable, setpoint, rate):
     if nSteps != 0:
         # Create list of setpoints and change setpoint by looping through array
         move_curve = np.linspace(cur_val, setpoint, nSteps)
+        
+        # We only want to show a progress bar when moving the device takes more than 2 sec (so use 1.5 for move time because it excludes communication time, etc.)
+        if nSteps * dt > 1.5:
+            printProgressBar(0, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
         for i in range(nSteps):
             write_command = getattr(device, 'write_' + variable)
             write_command(move_curve[i])
             time.sleep(dt)
+            if nSteps * dt > 2 and i % 5 == 0:
+                printProgressBar(i + 1, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
+            if nSteps * dt > 2 and i == range(nSteps)[-1]:
+                printProgressBar(nSteps, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
 
 def measure(md=None):
     """
@@ -898,4 +906,14 @@ def snapshot(md=None):
             
     
         
-    
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    """
+    Code from: https://stackoverflow.com/questions/3173320/text-progress-bar-in-terminal-with-block-characters
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+    # Print New Line on Complete
+    if iteration == total: 
+        print()    
