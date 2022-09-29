@@ -17,9 +17,10 @@ Available functions:
 Version 2.4 (2022-04-20)
 
 Contributors:
-Daan Wielens - Researcher at ICE/QTM - daan@daanwielens.com
+-- University of Twente --
+Daan Wielens
 Joris Voerman
-University of Twente
+Chuan Li
 """
 import time
 import numpy as np
@@ -27,7 +28,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.4 (2022-04-20)\n')
+print('QTMtoolbox version 2.4.1 (2022-09-29)\n')
 
 meas_dict = {}
 
@@ -213,7 +214,7 @@ def move(device, variable, setpoint, rate):
     # Determine number of steps
     Dt = abs(setpoint - cur_val) / rate
     nSteps = int(round(Dt / dt))
-    # Only move when setpoint != curval, i.e. nSteps != 0
+    # Only create linspace and move in steps when nSteps > 0
     if nSteps != 0:
         # Create list of setpoints and change setpoint by looping through array
         move_curve = np.linspace(cur_val, setpoint, nSteps)
@@ -229,6 +230,9 @@ def move(device, variable, setpoint, rate):
                 printProgressBar(i + 1, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
             if nSteps * dt > 2 and i == range(nSteps)[-1]:
                 printProgressBar(nSteps, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
+    else:
+        write_command = getattr(device, 'write_' + variable)
+        write_command(setpoint)
 
 def measure(md=None):
     """
