@@ -3,7 +3,7 @@
 Module to interact with a Digilent Analog Discovery 2.
 Uses the WaveForms SDK to communicate to the USB device.
 
-Version 0.1 (2022-09-29)
+Version 1.0 (2022-09-30)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -156,7 +156,7 @@ class DigiAD2:
         voltages = [float(element) for element in buffer]
         return time, voltages
 
-    def trigger(self, enable=True, source='analog', channel=0, timeout=0, edge_rising=True, level=0):
+    def trigger(self, enable=True, source='analog', channel=0, timeout=0, edge_rising=True, level=0, hysteresis=0.05):
         '''
         Set up triggering for the scope
         Parameters: - enable trigger?: bool
@@ -164,7 +164,8 @@ class DigiAD2:
                     - trigger channel: 1-4 for analog, 0-15 for digital
                     - timeout: seconds (default = 0)
                     - trigger edge rising: true = rising, false = falling (default rising)
-                    - trigger level: volts (default = 0)                   
+                    - trigger level: volts (default = 0)
+                    - hysteresis: hysteresis voltage level for reset (default = 50 mV)
         '''
         # Translate options to constants
         if source == 'none':
@@ -193,6 +194,9 @@ class DigiAD2:
         
             # set trigger level
             dwf.FDwfAnalogInTriggerLevelSet(self.handle, ctypes.c_double(level))
+            
+            # set hysteresis level
+            dwf.FDwfAnalogInTriggerHysteresisSet(self.handle, ctypes.c_double(hysteresis))
         
             # set trigger edge
             if edge_rising == True:
