@@ -24,7 +24,7 @@ The plot tool has a few useful keyboard shortcuts!
 * Ctrl+L : toggle live plotting on/off
 
 ## Requirements / Installation
-To run the QTMtoolbox, we recommend the installation of Python 3.x through the [Anaconda distribution](https://www.anaconda.com/distribution/). To use the live plotting tool as a standalone application, tick "Add Anaconda to system PATH" during the installation of Anaconda, or edit the Environment Variables manually.
+To run the QTMtoolbox, we recommend the installation of Python 3.x through the [Anaconda distribution](https://www.anaconda.com/distribution/). To use the live plotting tool as a standalone application, tick "Add Anaconda to system PATH" during the installation of Anaconda, or edit the Environment Variables manually (see below).
 
 By using the Anaconda prompt, install the following packages
 * pyqt5
@@ -32,9 +32,20 @@ By using the Anaconda prompt, install the following packages
 * pyvisa
 * pyserial
 
+**System environment variables**:
+If you need to manually add the Python path to the system variables (this enables you to open cmd.exe and type 'python', which is required for the QTMplot to work as a standalone application), add the following paths. Here, we assume that Anaconda is installed in C:\ProgramData\Anaconda3.
+- C:\ProgramData\Anaconda3
+- C:\ProgramData\Anaconda3\Scripts
+- C:\ProgramData\Anaconda3\Library
+- C:\ProgramData\Anaconda3\Library\bin
+- C:\ProgramData\Anaconda3\Library\mingw-x64\bin
+- C:\ProgramData\Anaconda3\Library\usr\bin
+
 ## Documentation
 A manual is supplied to help new users to setup their measurements. The manual also contains an overview of all instruments, functions, etc.
 * **Manual** is a PDF file containing detailed information about how to use this Toolbox.
 
 
 _The .gitignore file tells GitLab that certain files / folder should not be uploaded to this repository (such as personal configuration files) and can be ignored._
+
+
