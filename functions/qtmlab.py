@@ -14,7 +14,7 @@ Available functions:
     multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename)
     snapshot()
 
-Version 2.4 (2022-04-20)
+Version 2.5 (2022-10-28)
 
 Contributors:
 -- University of Twente --
