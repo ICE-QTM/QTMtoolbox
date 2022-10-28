@@ -272,6 +272,71 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
     # Initialise datafile
     filename = checkfname(filename)
 
+    # Create sweep_curve - this piece of code has moved up to make sure that IVVI corrections still end up in the header of the file.
+    if scale == 'lin':
+        sweep_curve = np.linspace(start, stop, npoints)
+    if scale == 'log':
+        sweep_curve = np.logspace(np.log10(start), np.log10(stop), npoints)
+    
+    # IVVI DAC discretization
+    '''
+    The DACs of the IVVI rack can be controlled by 16-bit (0...65535) values. With a range of 4 V and 65536 possible steps, every step 
+    corresponds to (4 V / 65535 steps) = 61.04 uV. If you sweep with a step size of 80 uV, this means that sometimes you'll jump one 
+    'dacstep', but also sometimes you'll jump two dacsteps because of the discretized nature of the DACs. 
+    For IV measurements of extremely linear (flat resistance) devices, this may yield unexpected results when the resistance
+    is calculated directly through numerical differentiation of the V/I. 
+    
+    To circumvent the issue, we convert <start> and <stop> to values that match with a dacstep. The increment (integer number of dacsteps)
+    is chosen to make sure that the dac-linspace still has <npoints>, unless the increment is smaller than the dacstep, for which <npoints>
+    changes to (stop-start)/dacsteps.
+    
+    Note: IVVI corrections are only implemented for the BIP (bipolar) polarity setting of the DAC module.
+    '''
+    if scale == 'IVVI':
+        print('<!> IVVI DAC correction is enabled for this sweep')
+        # Calculate the size of one dacstep
+        dac_quantum = 4 / (2**16 - 1)
+        # For the 'user input' <start>, <end> and <npoints>, calculate the requested stepsize
+        req_stepsize = (stop - start) / npoints
+        # Compute the closest number of dacsteps, which will be the new increment
+        dac_stepsize = int(round(req_stepsize / dac_quantum))
+        if dac_stepsize < 1:
+            dac_stepsize = 1
+            print('Warning: your selected stepsize is smaller than a DAC step and thus will be converted into 1 DAC step (61.04 uV)')
+        '''
+        Now construct the dac-linspace: start from the middle between <start> and <stop>, take 
+        the dac value closest to that. Then, given the <dac_stepsize>, move outwards from there
+        until the dac value exceeds <start> (or stop). Take the last previous point as <dac_start>. 
+        This ensures that the new dac values will never exceed the input values of the user.
+        '''      
+        # Construct dac-linspace
+        dac_list = (np.arange(0, 2**16) * dac_quantum) - 2 # Bipolar list of [-2 V, 2 V]
+        # Find midpoint of dac-linspace
+        midpoint = (stop - start) / 2
+        dac_mid_index = np.argmin(np.abs(dac_list - midpoint))
+        # Keep only points of the dac_list which fulfill these two criteria:
+        # - Their index is a multiple of dac_stepsize
+        # - The list of the indices of dac_list intersects with dac_mid_index
+        index_list = np.arange(0, 2**16, dac_stepsize)
+        Found = False
+        while not Found:
+            if dac_mid_index in index_list:
+                Found = True
+            else:
+                index_list += 1
+        # Convert start and stop to byte values. Round so that start < dac_start and stop > dac_stop
+        dac_start_index = int(np.ceil((start + 2)/dac_quantum))
+        dac_stop_index = int(np.floor((stop + 2)/dac_quantum))
+        # Remove all indices from index_list which are outside [dac_start_index, dac_stop_index]
+        index_list = index_list[index_list > dac_start_index]
+        index_list = index_list[index_list < dac_stop_index]
+        # Construct voltage sweep_curve
+        sweep_curve = dac_list[index_list]
+        start = dac_list[dac_start_index]
+        stop = dac_list[dac_stop_index]
+        npoints = len(sweep_curve)
+        
+
     # Create header
     header = sweepdev
     # The string 'setget' contains a "s" when the column is set during the measurement (i.e. a setpoint),
@@ -292,12 +357,6 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
     # Move to initial value
     print('Moving to the initial value...')
     move(device, variable, start, rate)
-
-    # Create sweep_curve
-    if scale == 'lin':
-        sweep_curve = np.linspace(start, stop, npoints)
-    if scale == 'log':
-        sweep_curve = np.logspace(np.log10(start), np.log10(stop), npoints)
 
     # Perform sweep
     for i in range(npoints):
