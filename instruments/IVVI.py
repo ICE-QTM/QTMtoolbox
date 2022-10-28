@@ -12,7 +12,7 @@ The serial connection is opened/closed after every command. This increases
 the stability of the dac and reduces the chance to setup multiple connections
 to the device.
 
-Version 2.1 (2021-10-07)
+Version 2.2 (2022-10-28)
 Daan Wielens - PhD at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -44,7 +44,7 @@ class IVVI:
             values_int[i] = int.from_bytes(resp[2*(i+1):4+2*i], byteorder='big')
             values_Volts[i] = round(((values_int[i]) / 65535 * 4 - 2), 8)
 
-        return values_Volts
+        return values_Volts, values_int
     
     def write_dac(self, dac, val):
         val = float(val)
@@ -68,7 +68,15 @@ class IVVI:
         
     def read_dac(self, dac):
         if (dac > 0) and (dac < 17):
-            resp = self.read_dacs()
+            resp = self.read_dacs()[0]
+            resp = resp[dac-1]
+            return resp
+        else:
+            raise ValueError('The <dac> integer must be within 1-16')
+            
+    def read_dac_byte(self, dac):
+        if (dac > 0) and (dac < 17):
+            resp = self.read_dacs()[1]
             resp = resp[dac-1]
             return resp
         else:
@@ -78,6 +86,11 @@ class IVVI:
     for i in range(16):
         exec("def read_dac" + str(i+1) + "(self):\n" +
              "    return(self.read_dac(" + str(i+1) + "))")
+        
+    # Create functions for reading any DAC channel (chan. 1-16) as byte values
+    for i in range(16):
+        exec("def read_dac_byte" + str(i+1) + "(self):\n" + 
+             "    return(self.read_dac_byte(" + str(i+1) + "))")
 
     # Create functions for setting any DAC channel (chan. 1-16) in the system
     for i in range(16):
@@ -87,4 +100,3 @@ class IVVI:
     def write_dacszero(self):
         for i in range(16):
             self.write_dac(i+1, 0)
-
