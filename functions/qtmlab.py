@@ -13,8 +13,9 @@ Available functions:
     megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard')
     multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename)
     snapshot()
+    scan_gpib()
 
-Version 2.5 (2022-10-28)
+Version 2.6 (2022-10-31)
 
 Contributors:
 -- University of Twente --
@@ -968,7 +969,26 @@ def snapshot(md=None):
                     data = meas_command()
                     file.write(devname + '.' + attr + ': ' + str(data) + '\n')
             
-    
+def scan_gpib():
+    import pyvisa as visa
+    rm = visa.ResourceManager()
+    devs = rm.list_resources()
+    for dev in devs:
+        ses = rm.open_resource(dev)
+        try:
+            print(dev + ' : ' + ses.query('*IDN?'))
+        except Exception:
+            # For Oxford iPS sources, use other query
+            try:
+                visa.read_termination = '\r'
+                print(dev + ' : ' + ses.query('V'))
+            except visa.VisaIOError as e:
+                if e.abbreviation == 'VI_ERROR_TMO':
+                    print(dev + ' : got VISA timeout.')
+                else:
+                    print(dev + ' : got VISA error.')
+            except Exception:
+                print(dev + ' : no info available.')    
         
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """
