@@ -30,7 +30,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.4.1 (2022-09-29)\n')
+print('QTMtoolbox version 2.6.1 (2022-10-31)\n')
 
 meas_dict = {}
 
