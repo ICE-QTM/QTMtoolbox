@@ -10,12 +10,12 @@ Available functions:
     record(dt, npoints, filename)
     record_until(dt, filename, device, variable, operator, value, maxnpoints)
     multisweep(sweep_list, npoints, filename)
-    megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard')
+    megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard', scale='lin')
     multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename)
     snapshot()
     scan_gpib()
 
-Version 2.6 (2022-10-31)
+Version 2.6.1 (2022-10-31)
 
 Contributors:
 -- University of Twente --
@@ -279,64 +279,9 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
     if scale == 'log':
         sweep_curve = np.logspace(np.log10(start), np.log10(stop), npoints)
     
-    # IVVI DAC discretization
-    '''
-    The DACs of the IVVI rack can be controlled by 16-bit (0...65535) values. With a range of 4 V and 65536 possible steps, every step 
-    corresponds to (4 V / 65535 steps) = 61.04 uV. If you sweep with a step size of 80 uV, this means that sometimes you'll jump one 
-    'dacstep', but also sometimes you'll jump two dacsteps because of the discretized nature of the DACs. 
-    For IV measurements of extremely linear (flat resistance) devices, this may yield unexpected results when the resistance
-    is calculated directly through numerical differentiation of the V/I. 
-    
-    To circumvent the issue, we convert <start> and <stop> to values that match with a dacstep. The increment (integer number of dacsteps)
-    is chosen to make sure that the dac-linspace still has <npoints>, unless the increment is smaller than the dacstep, for which <npoints>
-    changes to (stop-start)/dacsteps.
-    
-    Note: IVVI corrections are only implemented for the BIP (bipolar) polarity setting of the DAC module.
-    '''
+    # IVVI DAC discretization (for explanation, see DACsyncing below / Manual.pdf)
     if scale == 'IVVI':
-        print('<!> IVVI DAC correction is enabled for this sweep')
-        # Calculate the size of one dacstep
-        dac_quantum = 4 / (2**16 - 1)
-        # For the 'user input' <start>, <end> and <npoints>, calculate the requested stepsize
-        req_stepsize = (stop - start) / npoints
-        # Compute the closest number of dacsteps, which will be the new increment
-        dac_stepsize = int(round(req_stepsize / dac_quantum))
-        if dac_stepsize < 1:
-            dac_stepsize = 1
-            print('Warning: your selected stepsize is smaller than a DAC step and thus will be converted into 1 DAC step (61.04 uV)')
-        '''
-        Now construct the dac-linspace: start from the middle between <start> and <stop>, take 
-        the dac value closest to that. Then, given the <dac_stepsize>, move outwards from there
-        until the dac value exceeds <start> (or stop). Take the last previous point as <dac_start>. 
-        This ensures that the new dac values will never exceed the input values of the user.
-        '''      
-        # Construct dac-linspace
-        dac_list = (np.arange(0, 2**16) * dac_quantum) - 2 # Bipolar list of [-2 V, 2 V]
-        # Find midpoint of dac-linspace
-        midpoint = (stop - start) / 2
-        dac_mid_index = np.argmin(np.abs(dac_list - midpoint))
-        # Keep only points of the dac_list which fulfill these two criteria:
-        # - Their index is a multiple of dac_stepsize
-        # - The list of the indices of dac_list intersects with dac_mid_index
-        index_list = np.arange(0, 2**16, dac_stepsize)
-        Found = False
-        while not Found:
-            if dac_mid_index in index_list:
-                Found = True
-            else:
-                index_list += 1
-        # Convert start and stop to byte values. Round so that start < dac_start and stop > dac_stop
-        dac_start_index = int(np.ceil((start + 2)/dac_quantum))
-        dac_stop_index = int(np.floor((stop + 2)/dac_quantum))
-        # Remove all indices from index_list which are outside [dac_start_index, dac_stop_index]
-        index_list = index_list[index_list > dac_start_index]
-        index_list = index_list[index_list < dac_stop_index]
-        # Construct voltage sweep_curve
-        sweep_curve = dac_list[index_list]
-        start = dac_list[dac_start_index]
-        stop = dac_list[dac_stop_index]
-        npoints = len(sweep_curve)
-        
+        sweep_curve, start, stop, npoints = DACsyncing(start, stop, npoints) 
 
     # Create header
     header = sweepdev
@@ -568,12 +513,13 @@ def multisweep(sweep_list, npoints, filename, md=None):
         with open(filename, 'a') as file:
             file.write(datastr + '\n')
 
-def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard', md=None):
+def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard', scale='lin', md=None):
     """
     The megasweep command sweeps two variables. Variable 1 is the "slow" variable.
     For every datapoint of variable 1, a sweep of variable 2 ("fast" variable) is performed.
     The syntax for both variables is <device>, <variable>, <start>, <stop>, <rate>, <npoints>.
     For measurements, the 'measurement dictionary', meas_dict, is used.
+    If the scale is changed from 'lin' to 'IVVI', the DAC syncing (see Manual.pdf on 'sweep') will be enabled for the fast axis (variable 2).
     """
     print('Starting a "' + mode + '" megasweep of the following variables:')
     print('1: "' + variable1 + '" from ' + str(start1) + ' to ' + str(stop1) + ' in ' + str(npoints1) + ' steps with rate ' + str(rate1))
@@ -586,6 +532,19 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
     # Initialise datafile
     filename = checkfname(filename)
 
+    # Move to initial value
+    print('Moving variable1 to the initial value...')
+    move(device1, variable1, start1, rate1)
+    print('Moving variable2 to the initial value...')
+    move(device2, variable2, start2, rate2)
+
+    # Create sweep_curve
+    sweep_curve1 = np.linspace(start1, stop1, npoints1)
+    if scale == 'IVVI':
+        sweep_curve2, start2, stop2, npoints2 = DACsyncing(start2, stop2, npoints2)
+    else:
+        sweep_curve2 = np.linspace(start2, stop2, npoints2)
+        
     # Create header
     header = sweepdev1 + ', ' + sweepdev2
     setget = 'ss'
@@ -600,16 +559,6 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
         swcmd = 'Megasweep of (1)' + sweepdev1  + ' from ' + str(start1) + ' to ' + str(stop1) + ' in ' + str(npoints1)  +' steps with rate ' + str(rate1) + 'and (2) ' + sweepdev2  + ' from ' + str(start2) + ' to ' + str(stop2) + ' in ' + str(npoints2)  +' steps with rate ' + str(rate2)
         file.write(swcmd + '\n')
         file.write(header + '\n')
-
-    # Move to initial value
-    print('Moving variable1 to the initial value...')
-    move(device1, variable1, start1, rate1)
-    print('Moving variable2 to the initial value...')
-    move(device2, variable2, start2, rate2)
-
-    # Create sweep_curve
-    sweep_curve1 = np.linspace(start1, stop1, npoints1)
-    sweep_curve2 = np.linspace(start2, stop2, npoints2)
 
     if mode=='standard':
         for i in range(npoints1):
@@ -988,7 +937,66 @@ def scan_gpib():
                 else:
                     print(dev + ' : got VISA error.')
             except Exception:
-                print(dev + ' : no info available.')    
+                print(dev + ' : no info available.') 
+                
+def DACsyncing(start, stop, npoints):
+    '''
+    The DACs of the IVVI rack can be controlled by 16-bit (0...65535) values. With a range of 4 V and 65536 possible steps, every step 
+    corresponds to (4 V / 65535 steps) = 61.04 uV. If you sweep with a step size of 80 uV, this means that sometimes you'll jump one 
+    'dacstep', but also sometimes you'll jump two dacsteps because of the discretized nature of the DACs. 
+    For IV measurements of extremely linear (flat resistance) devices, this may yield unexpected results when the resistance
+    is calculated directly through numerical differentiation of the V/I. 
+    
+    To circumvent the issue, we convert <start> and <stop> to values that match with a dacstep. The increment (integer number of dacsteps)
+    is chosen to make sure that the dac-linspace still has <npoints>, unless the increment is smaller than the dacstep, for which <npoints>
+    changes to (stop-start)/dacsteps.
+    
+    Note: IVVI corrections are only implemented for the BIP (bipolar) polarity setting of the DAC module.
+    '''
+    print('<!> IVVI DAC correction is enabled for this sweep')
+    # Calculate the size of one dacstep
+    dac_quantum = 4 / (2**16 - 1)
+    # For the 'user input' <start>, <end> and <npoints>, calculate the requested stepsize
+    req_stepsize = (stop - start) / npoints
+    # Compute the closest number of dacsteps, which will be the new increment
+    dac_stepsize = int(round(req_stepsize / dac_quantum))
+    if dac_stepsize < 1:
+        dac_stepsize = 1
+        print('Warning: your selected stepsize is smaller than a DAC step and thus will be converted into 1 DAC step (61.04 uV)')
+    '''
+    Now construct the dac-linspace: start from the middle between <start> and <stop>, take 
+    the dac value closest to that. Then, given the <dac_stepsize>, move outwards from there
+    until the dac value exceeds <start> (or stop). Take the last previous point as <dac_start>. 
+    This ensures that the new dac values will never exceed the input values of the user.
+    '''      
+    # Construct dac-linspace
+    dac_list = (np.arange(0, 2**16) * dac_quantum) - 2 # Bipolar list of [-2 V, 2 V]
+    # Find midpoint of dac-linspace
+    midpoint = (stop - start) / 2
+    dac_mid_index = np.argmin(np.abs(dac_list - midpoint))
+    # Keep only points of the dac_list which fulfill these two criteria:
+    # - Their index is a multiple of dac_stepsize
+    # - The list of the indices of dac_list intersects with dac_mid_index
+    index_list = np.arange(0, 2**16, dac_stepsize)
+    Found = False
+    while not Found:
+        if dac_mid_index in index_list:
+            Found = True
+        else:
+            index_list += 1
+    # Convert start and stop to byte values. Round so that start < dac_start and stop > dac_stop
+    dac_start_index = int(np.ceil((start + 2)/dac_quantum))
+    dac_stop_index = int(np.floor((stop + 2)/dac_quantum))
+    # Remove all indices from index_list which are outside [dac_start_index, dac_stop_index]
+    index_list = index_list[index_list > dac_start_index]
+    index_list = index_list[index_list < dac_stop_index]
+    # Construct voltage sweep_curve
+    sweep_curve = dac_list[index_list]
+    start = dac_list[dac_start_index]
+    stop = dac_list[dac_stop_index]
+    npoints = len(sweep_curve) 
+
+    return sweep_curve, start, stop, npoints               
         
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """
