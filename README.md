@@ -45,7 +45,18 @@ If you need to manually add the Python path to the system variables (this enable
 A manual is supplied to help new users to setup their measurements. The manual also contains an overview of all instruments, functions, etc.
 * **Manual** is a PDF file containing detailed information about how to use this Toolbox.
 
+## Parsing the data for use in other Python code
+A file parser can be found in `functions.qtmimport`. To prevent that this file needs to be copied into every measurement folder, or that absolute paths need to be used when importing this file, it has been separated into a PyPI package as well.
 
+To install the qtmimport package, use
+```
+pip install qtmimport
+```
+from the Anaconda prompt. Import the module either as `from qtmimport import qtmimport` and use as `data = qtmimport.parse_data(filename)` or use `from qtmimport.qtmimport import *` and use `data = parse_data(filename)`.
+
+The package can be found at https://pypi.org/project/qtmimport/
+
+## Remarks
 _The .gitignore file tells GitLab that certain files / folder should not be uploaded to this repository (such as personal configuration files) and can be ignored._
 
 
