@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.6.1 (2022-10-31)
+Version 2.7 (2022-11-24)
 
 Contributors:
 -- University of Twente --
@@ -232,6 +232,8 @@ def move(device, variable, setpoint, rate):
                 printProgressBar(i + 1, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
             if nSteps * dt > 2 and i == range(nSteps)[-1]:
                 printProgressBar(nSteps, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
+        # Always finish with writing the setpoint as final value
+        write_command(setpoint)
     else:
         write_command = getattr(device, 'write_' + variable)
         write_command(setpoint)
