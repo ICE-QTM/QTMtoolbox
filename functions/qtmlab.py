@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.7 (2022-11-24)
+Version 2.7.1 (2022-12-08)
 
 Contributors:
 -- University of Twente --
@@ -30,7 +30,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.7 (2022-11-24)\n')
+print('QTMtoolbox version 2.7.1 (2022-12-08)\n')
 
 meas_dict = {}
 
@@ -959,7 +959,7 @@ def DACsyncing(start, stop, npoints):
     # Calculate the size of one dacstep
     dac_quantum = 4 / (2**16 - 1)
     # For the 'user input' <start>, <end> and <npoints>, calculate the requested stepsize
-    req_stepsize = (stop - start) / npoints
+    req_stepsize = np.abs((stop - start) / npoints)
     # Compute the closest number of dacsteps, which will be the new increment
     dac_stepsize = int(round(req_stepsize / dac_quantum))
     if dac_stepsize < 1:
