@@ -5,7 +5,7 @@ Uses pyVISA to communicate with the GPIB device.
 Assumes GPIB address is of the form GPIB0::<xx>::INSTR where
 <xx> is the device address (number).
 
-Version 2.0 (2022-11-15)
+Version 2.1 (2022-12-12)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -93,7 +93,7 @@ class Keithley2450:
         return float(self.visa.query('MEAS:CURR?').strip('\n'))
 
     def read_v(self):
-        # Both MEAS:VOLT? and READ? take ~ 63 ms over USB, so there is no need to use READ.
+        # Both MEAS:VOLT? and READ? take the same processing time, so no nead to use READ? for speed.
         return float(self.visa.query('MEAS:VOLT?').strip('\n'))
     
     def read_r(self):
@@ -175,3 +175,35 @@ class Keithley2450:
             self.visa.write('SOUR:' + func + ':READ:BACK ON')
         if val in [0, 'Off', 'OFF', 'off']:
             self.visa.write('SOUR:' + func + ':READ:BACK OFF')
+    
+    def read_avgnplc(self):
+        if self.sense_func == 'VOLT:DC':
+            return float(self.query('SENS:VOLT:NPLC?'))
+        if self.sense_func == 'CURR:DC':
+            return float(self.query('SENS:CURR:NPLC?'))
+        
+        
+    def read_avgnpts(self):
+        if self.sense_func == 'VOLT:DC':
+            return float(self.query('SENS:VOLT:AVER:COUN?'))
+        elif self.sense_func == 'CURR:DC':
+            return float(self.query('SENS:CURR:AVER:COUN?'))
+        
+            
+    def info(self):
+        print('-----------------------------------------------------')
+        print('Source mode        :          ' + str(self.read_sourcefunc()))
+        if self.source_func == 'VOLT':
+            print('Source range       :          ' + self.query('SOUR:VOLT:RANG?') + ' V')
+            print('Source compliance  :          ' + str(self.read_Icompliance()) + ' A')
+        if self.source_func == 'CURR':
+            print('Source range       :          ' + self.query('SOUR:CURR:RANG?') + ' A')
+            print('Source compliance  :          ' + str(self.read_Vcompliance()) + ' A')
+        print('Compliance reached :          ' + str(self.read_inttrip()))         
+        print('Source readback    :          ' + str(self.read_readback())) 
+        print('-----------------------------------------------------')
+        print('Measurement mode   :          ' + str(self.read_sensefunc()))
+        print('nPLC averaging     :          ' + str(self.read_avgnplc()))
+        print('-----------------------------------------------------')
+
+        
