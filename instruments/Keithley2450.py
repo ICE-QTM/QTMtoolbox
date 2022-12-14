@@ -5,7 +5,7 @@ Uses pyVISA to communicate with the GPIB device.
 Assumes GPIB address is of the form GPIB0::<xx>::INSTR where
 <xx> is the device address (number).
 
-Version 2.1 (2022-12-12)
+Version 2.2 (2022-12-14)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -181,6 +181,12 @@ class Keithley2450:
             return float(self.query('SENS:VOLT:NPLC?'))
         if self.sense_func == 'CURR:DC':
             return float(self.query('SENS:CURR:NPLC?'))
+        
+    def write_avgnplc(self, val):
+        if self.sense_func == 'VOLT:DC':
+            self.visa.write('SENS:VOLT:NPLC ' + str(val))
+        if self.sense_func == 'CURR:DC':
+            self.visa.write('SENS:CURR:NPLC ' + str(val))       
         
         
     def read_avgnpts(self):
