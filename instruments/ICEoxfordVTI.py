@@ -3,23 +3,13 @@
 Module to interact with the ICEoxford VTI Remote Comms service.
 Uses TCP/IP sockets to communicate with the device.
 
-Version 0.1 (2022-02-25)
+Version 1.0 (2022-12-19)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
-daan@daanwielens.com
-
-Initial version 0.1 only contains 'read' commands to test communication
+d.h.wielens@utwente.nl
 """
 
 import socket
-
-class WrongInstrErr(Exception):
-    """
-    A connection was established to the instrument, but the instrument
-    is not an ICEoxford VTI controller. Please retry with the correct
-    address. Make sure that each device has an unique address.
-    """
-    pass
 
 class ICEoxfordVTI:
     type = 'ICEoxford VTI'
@@ -84,7 +74,25 @@ class ICEoxfordVTI:
     def read_NV2mode(self):
         self.s.sendall(('NV2 MODE?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return resp     
+        return resp  
+    
+    def write_NV1mode(self, val):
+        if val in ['MANUAL', 'AUTO']:
+            self.s.sendall(('NV1 MODE=' + val + '\r\n').encode())
+            self.s.recv(1024)
+            self.s.sendall(('NV1 SET VALUES\r\n').encode())
+            self.s.recv(1024)
+        else:
+            raise ValueError('The needle valve mode can be "MANUAL" or "AUTO".')   
+
+    def write_NV2mode(self, val):
+        if val in ['MANUAL', 'AUTO']:
+            self.s.sendall(('NV2 MODE=' + val + '\r\n').encode())
+            self.s.recv(1024)
+            self.s.sendall(('NV2 SET VALUES\r\n').encode())
+            self.s.recv(1024)
+        else:
+            raise ValueError('The needle valve mode can be "MANUAL" or "AUTO".')
     
     # Needle valve manual output set value as percentage
     def read_NV1manout(self):
@@ -95,7 +103,19 @@ class ICEoxfordVTI:
     def read_NV2manout(self):
         self.s.sendall(('NV2 MAN OUT?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return float(resp)    
+        return float(resp) 
+    
+    def write_NV1manout(self, val):
+        self.s.sendall(('NV1 MAN OUT=' + str(val) + '\r\n').encode())
+        self.s.recv(1024)
+        self.s.sendall(('NV1 SET VALUES\r\n').encode())
+        self.s.recv(1024)
+
+    def write_NV2manout(self, val):
+        self.s.sendall(('NV2 MAN OUT=' + str(val) + '\r\n').encode())
+        self.s.recv(1024)
+        self.s.sendall(('NV2 SET VALUES\r\n').encode())
+        self.s.recv(1024)
     
     # Needle valve setpoint in mbar
     def read_NV1setp(self):
@@ -106,7 +126,19 @@ class ICEoxfordVTI:
     def read_NV2setp(self):
         self.s.sendall(('NV2 SETPOINT?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return float(resp)    
+        return float(resp) 
+    
+    def write_NV1setp(self, val):
+        self.s.sendall(('NV1 SETPOINT=' + str(val) + '\r\n').encode())
+        self.s.recv(1024)
+        self.s.sendall(('NV1 SET VALUES\r\n').encode())
+        self.s.recv(1024)
+
+    def write_NV2setp(self, val):
+        self.s.sendall(('NV2 SETPOINT=' + str(val) + '\r\n').encode())
+        self.s.recv(1024)
+        self.s.sendall(('NV2 SET VALUES\r\n').encode())
+        self.s.recv(1024) 
         
     # Needle valve PID settings as a list [P, I, D]
     def read_NV1PID(self):
@@ -124,6 +156,41 @@ class ICEoxfordVTI:
         for i in range(3):
             resp[i] = float(resp[i])
         return resp 
+    
+    def write_NV1PID(self, P, I, D):
+        self.s.sendall(('NV1 PID=' + str(P) + ',' + str(I) + ',' + str(D) + '\r\n').encode())
+        self.s.recv(1024)
+        self.s.sendall(('NV1 SET VALUES\r\n').encode())
+        self.s.recv(1024)
+
+    def write_NV2PID(self, P, I, D):
+        self.s.sendall(('NV2 PID=' + str(P) + ',' + str(I) + ',' + str(D) + '\r\n').encode())
+        self.s.recv(1024)
+        self.s.sendall(('NV2 SET VALUES\r\n').encode())
+        self.s.recv(1024)
+        
+    # Needle valve error band in mbar
+    def read_NV1error(self):
+        self.s.sendall(('NV1 ERROR BAND?\r\n').encode())
+        resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
+        return float(resp)    
+    
+    def read_NV2error(self):
+        self.s.sendall(('NV2 ERROR BAND?\r\n').encode())
+        resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
+        return float(resp) 
+    
+    def write_NV1error(self, val):
+        self.s.sendall(('NV1 ERROR BAND=' + str(val) + '\r\n').encode())
+        self.s.recv(1024)
+        self.s.sendall(('NV1 SET VALUES\r\n').encode())
+        self.s.recv(1024)
+
+    def write_NV2error(self, val):
+        self.s.sendall(('NV2 ERROR BAND=' + str(val) + '\r\n').encode())
+        self.s.recv(1024)
+        self.s.sendall(('NV2 SET VALUES\r\n').encode())
+        self.s.recv(1024) 
 
     # Needle valve setpoint in mbar
     def read_NV1outp(self):
@@ -146,18 +213,54 @@ class ICEoxfordVTI:
     def read_H2mode(self):
         self.s.sendall(('HEATER2 MODE?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return resp     
+        return resp  
+    
+    def write_H1mode(self, val):
+        if val in ['MANUAL', 'AUTO']:
+            self.s.sendall(('HEATER1 MODE=' + val + '\r\n').encode())
+            self.s.recv(1024)
+            self.s.sendall(('HEATER1 SET VALUES\r\n').encode())
+            self.s.recv(1024)
+        else:
+            raise ValueError('The heater mode can be "MANUAL" or "AUTO".')   
+
+    def write_H2mode(self, val):
+        if val in ['MANUAL', 'AUTO']:
+            self.s.sendall(('HEATER2 MODE=' + val + '\r\n').encode())
+            self.s.recv(1024)
+            self.s.sendall(('HEATER2 SET VALUES\r\n').encode())
+            self.s.recv(1024)
+        else:
+            raise ValueError('The heater mode can be "MANUAL" or "AUTO".')   
     
     # Heater channel, returns the chosen control channel   
     def read_H1chan(self):
         self.s.sendall(('HEATER1 CHAN?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return resp    
+        return resp        
   
     def read_H2chan(self):
         self.s.sendall(('HEATER2 CHAN?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return resp     
+        return resp 
+
+    def write_H1chan(self, val):
+        if val in ['NONE', 'A', 'B', 'C', 'D', 'D2', 'D3', 'D4', 'D5']:
+            self.s.sendall(('HEATER1 CHAN=' + val + '\r\n').encode())
+            self.s.recv(1024)
+            self.s.sendall(('HEATER1 SET VALUES\r\n').encode())
+            self.s.recv(1024)
+        else:
+            raise ValueError('The heater channel can be "NONE", "A", "B", "C", "D", "D2", "D3", "D4", "D5".')    
+
+    def write_H2chan(self, val):
+        if val in ['NONE', 'A', 'B', 'C', 'D', 'D2', 'D3', 'D4', 'D5']:
+            self.s.sendall(('HEATER2 CHAN=' + val + '\r\n').encode())
+            self.s.recv(1024)
+            self.s.sendall(('HEATER2 SET VALUES\r\n').encode())
+            self.s.recv(1024)
+        else:
+            raise ValueError('The heater channel can be "NONE", "A", "B", "C", "D", "D2", "D3", "D4", "D5".') 
     
     # Heater channel manual output, returns output as percentage  
     def read_H1manout(self):
@@ -168,7 +271,19 @@ class ICEoxfordVTI:
     def read_H2manout(self):
         self.s.sendall(('HEATER2 MAN OUT?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return float(resp)      
+        return float(resp)
+                     
+    def write_H1manout(self, val):
+        self.s.sendall(('HEATER1 MAN OUT=' + str(val) + '\r\n').encode())
+        self.s.recv(1024)
+        self.s.sendall(('HEATER1 SET VALUES\r\n').encode())
+        self.s.recv(1024)
+
+    def write_H2manout(self, val):
+        self.s.sendall(('HEATER2 MAN OUT=' + str(val) + '\r\n').encode())
+        self.s.recv(1024)
+        self.s.sendall(('HEATER2 SET VALUES\r\n').encode())
+        self.s.recv(1024)
     
     # Heater channel setpoint, returns value in Kelvin
     def read_H1setp(self):
@@ -179,7 +294,19 @@ class ICEoxfordVTI:
     def read_H2setp(self):
         self.s.sendall(('HEATER2 SETPOINT?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return float(resp)     
+        return float(resp)  
+
+    def write_H1setp(self, val):
+        self.s.sendall(('HEATER1 SETPOINT=' + str(val) + '\r\n').encode())
+        self.s.recv(1024)
+        self.s.sendall(('HEATER1 SET VALUES\r\n').encode())
+        self.s.recv(1024)
+    
+    def write_H2setp(self, val):
+        self.s.sendall(('HEATER2 SETPOINT=' + str(val) + '\r\n').encode())
+        self.s.recv(1024)
+        self.s.sendall(('HEATER2 SET VALUES\r\n').encode())
+        self.s.recv(1024)
     
     # Heater channel ramp rate, returns value in Kelvin/minute
     def read_H1rate(self):
@@ -202,12 +329,24 @@ class ICEoxfordVTI:
         return resp     
     
     def read_H2PID(self):
-        self.s.sendall(('HEATER1 PID?\r\n').encode())
+        self.s.sendall(('HEATER2 PID?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
         resp = resp.split(',')
         for i in range(3):
             resp[i] = float(resp[i])
-        return resp      
+        return resp
+
+    def write_H1PID(self, P, I, D):
+        self.s.sendall(('HEATER1 PID=' + str(P) + ',' + str(I) + ',' + str(D) + '\r\n').encode())
+        self.s.recv(1024)
+        self.s.sendall(('HEATER1 SET VALUES\r\n').encode())
+        self.s.recv(1024)
+
+    def write_H2PID(self, P, I, D):
+        self.s.sendall(('HEATER2 PID=' + str(P) + ',' + str(I) + ',' + str(D) + '\r\n').encode())
+        self.s.recv(1024)
+        self.s.sendall(('HEATER2 SET VALUES\r\n').encode())
+        self.s.recv(1024)
     
     # Heater channel range, returns OFF, LOW, MED, HIGH
     def read_H1range(self):
@@ -218,7 +357,25 @@ class ICEoxfordVTI:
     def read_H2range(self):
         self.s.sendall(('HEATER2 RANGE?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return resp     
+        return resp   
+    
+    def write_H1range(self, val):
+        if val in ['OFF', 'LOW', 'MEDIUM', 'HIGH']:
+            self.s.sendall(('HEATER1 RANGE=' + val + '\r\n').encode())
+            self.s.recv(1024)
+            self.s.sendall(('HEATER1 SET VALUES\r\n').encode())
+            self.s.recv(1024)
+        else:
+            raise ValueError('The heater range can be either "OFF", "LOW", "MEDIUM" or "HIGH".')
+
+    def write_H2range(self, val):
+        if val in ['OFF', 'LOW', 'MEDIUM', 'HIGH']:
+            self.s.sendall(('HEATER2 RANGE=' + val + '\r\n').encode())
+            self.s.recv(1024)
+            self.s.sendall(('HEATER2 SET VALUES\r\n').encode())
+            self.s.recv(1024)
+        else:
+            raise ValueError('The heater range can be either "OFF", "LOW", "MEDIUM" or "HIGH".')
     
     # Heater channel ramp enabled, returns OFF, ON
     def read_H1ramp(self):
