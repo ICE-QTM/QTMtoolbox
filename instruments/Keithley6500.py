@@ -5,13 +5,14 @@ Uses pyVISA to communicate with the GPIB device.
 Assumes GPIB address is of the form GPIB0::<xx>::INSTR where
 <xx> is the device address (number).
 
-Version 1.0 (2022-04-07)
+Version 1.1 (2022-12-20)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 daan@daanwielens.com
 """
 
 import pyvisa as visa
+import time
 
 class WrongInstrErr(Exception):
     """
@@ -39,6 +40,8 @@ class Keithley6500:
             raise WrongInstrErr('Expected Keithley 6500, got {}'.format(resp)) 
         # Increase timeout, because changing mode (i.e. read_dcv(), then read_acv()) takes time for to initialize
         self.visa.timeout = 5000
+        # Beep for measurement
+        self.notify = False
     
     def get_iden(self):
         resp = str(self.visa.query('*IDN?'))
@@ -54,13 +57,23 @@ class Keithley6500:
     def close(self):
         self.visa.close()
         
+    def beep(self, frequency, duration):
+        self.visa.write('SYST:BEEP ' + str(frequency) + ', ' + str(duration))
+        time.sleep(duration + 0.02)
+        
     # Use the current measurement mode and return one reading
     def read(self):
+        if self.notify:
+            self.beep(1569.98, 0.05)
+            self.beep(2093, 0.1)
         return float(self.query('READ?'))
     
     # Set the device to DC Voltage measurement mode and return one reading    
     def read_dcv(self):
         self.write('FUNC "VOLT"')
+        if self.notify:
+            self.beep(1569.98, 0.05)
+            self.beep(2093, 0.1)
         return self.read()
    
     # Set the device to AC Voltage measurement mode and return one reading
