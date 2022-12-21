@@ -3,7 +3,7 @@
 Module to interact with the ICEoxford VTI Remote Comms service.
 Uses TCP/IP sockets to communicate with the device.
 
-Version 1.0 (2022-12-19)
+Version 1.1 (2022-12-21)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 d.h.wielens@utwente.nl
@@ -438,42 +438,42 @@ class ICEoxfordVTI:
     def read_tempA(self):
         self.s.sendall(('TEMPERATURE A?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return resp    
+        return float(resp)    
     
     def read_tempB(self):
         self.s.sendall(('TEMPERATURE B?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return resp   
+        return float(resp)   
     
     def read_tempC(self):
         self.s.sendall(('TEMPERATURE C?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return resp   
+        return float(resp)   
     
     def read_tempD1(self):
         self.s.sendall(('TEMPERATURE D1?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return resp   
+        return float(resp)   
     
     def read_tempD2(self):
         self.s.sendall(('TEMPERATURE D2?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return resp   
+        return float(resp)    
     
     def read_tempD3(self):
         self.s.sendall(('TEMPERATURE D3?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return resp   
+        return float(resp)  
     
     def read_tempD4(self):
         self.s.sendall(('TEMPERATURE D4?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return resp   
+        return float(resp)  
     
     def read_tempD5(self):
         self.s.sendall(('TEMPERATURE D5?\r\n').encode())
         resp = self.s.recv(1024).decode().split('=')[1].strip('\r\n')
-        return resp   
+        return float(resp)   
     
     # Magnet commands --------------------------------------------------------------------------
     # Magnet lower sweep current limit, value in Ampere  
