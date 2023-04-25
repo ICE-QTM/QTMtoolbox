@@ -3,10 +3,10 @@
 Module to interact with a Keysight 33500B series waveform generator.
 Uses pyVISA to communicate with the USB/GPIB device.
 
-Version 1.1 (2020-06-15)
-Daan Wielens - PhD at ICE/QTM
+Version 1.2 (2023-04-25)
+Daan Wielens - Researcher at ICE/QTM
 University of Twente
-daan@daanwielens.com
+d.h.wielens@utwente.nl
 """
 
 import pyvisa as visa
@@ -100,7 +100,59 @@ class Keysight33500B:
     def read_output(self):
         resp = self.visa.query('OUTP?').strip('\n')
         return resp
+    
+    def write_pulsedutycycle(self, val):
+        # Only for pulse waves. Value between 0 and 100
+        val = float(val)
+        if (val >= 0) and (val <= 100):
+            self.visa.write('SOUR:FUNC:PULS:DCYC ' + str(val))
+        else:
+            raise ValueError('The duty cycle should be within 0 and 100 %.')
+            
+    def read_pulsedutycycle(self):
+        # Only for pulse waves
+        resp = float(self.visa.query('SOUR:FUNC:PULS:DCYC?'))
+        return resp  
 
+    def read_pulsetranslead(self): 
+        # Read pulse leading transition time, in seocnds
+        resp = float(self.visa.query('SOUR:FUNC:PULSE:TRAN:LEAD?'))
+        return resp
+
+    def read_pulsetranstrail(self): 
+        # Read pulse trailing transition time, in seocnds
+        resp = float(self.visa.query('SOUR:FUNC:PULSE:TRAN:TRA?'))
+        return resp
+
+    def write_pulsetranslead(self, val):
+        # Set pulse leading transition time. Value should be between 8.4 ns and 1 us
+        val = float(val)
+        if (val >= 8.4E-9) and (val <= 1E-6):
+            self.visa.write('SOUR:FUNC:PULS:TRAN:LEAD ' + str(val))
+        else:
+            raise ValueError('The transition time should be between 8.4 ns and 1 us.')
+
+    def write_pulsetranstrail(self, val):
+        # Set pulse trailing transition time. Value should be between 8.4 ns and 1 us
+        val = float(val)
+        if (val >= 8.4E-9) and (val <= 1E-6):
+            self.visa.write('SOUR:FUNC:PULS:TRAN:TRA ' + str(val))
+        else:
+            raise ValueError('The transition time should be between 8.4 ns and 1 us.') 
+            
+    def read_pulsewidth(self): 
+        # Read pulse width in seconds
+        resp = float(self.visa.query('SOUR:FUNC:PULSE:WIDT?'))
+        return resp   
+
+    def write_pulsewidth(self, val):
+        # Set pulse width in seconds. Value should be between 16 ns up to period (1/freq)
+        val = float(val)
+        if (val >= 16E-9) and (val <= 1/self.read_freq()):
+            self.visa.write('SOUR:FUNC:PULS:WIDT ' + str(val))
+        else:
+            raise ValueError('The pulse width should be between 16 ns and 1/f.')          
+   
     def read_load(self):
         resp = self.visa.query('OUTP:LOAD?').strip('\n')
         # Note that the device returns 9.9E+37 if the load is INF.
