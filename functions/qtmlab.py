@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.7.1 (2022-12-08)
+Version 2.7.2 (2023-05-09)
 
 Contributors:
 -- University of Twente --
@@ -30,7 +30,8 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.7.1 (2022-12-08)\n')
+print('QTMtoolbox version 2.7.2 (2023-05-09)')
+print('----------------------------------------------------------------------')
 
 meas_dict = {}
 
@@ -76,10 +77,10 @@ def checkfname(filename):
             new_filename_base = new_filename[0]
         new_filename = new_filename_base + '_' + str(append_no) +'.' + new_filename[1] #add "_N" to the filename where N is the number of loop iterations
         if os.path.isfile(new_filename) == False: #Only when the newly created filename doesn't exist: inform the user. The whileloop stops.
-            print('The file already exists. Filename changed to: ' + new_filename)
+            print('<!> The file already exists. Filename changed to: \n    ' + new_filename)
     return(new_filename)
 
-def move(device, variable, setpoint, rate):
+def move(device, variable, setpoint, rate, silent=False):
     """
     The move command moves <variable> of <device> to <setpoint> at <rate>.
     Example: move(KeithBG, dcv, 10, 0.1)
@@ -132,6 +133,8 @@ def move(device, variable, setpoint, rate):
             if cntr == 5:
                 time.sleep(0.2)
                 write_command(setpoint)
+        
+        return
 
     #---------------------------------------------------------------------------
 
@@ -199,8 +202,46 @@ def move(device, variable, setpoint, rate):
                     print('   Mercury iPS: performed "HOLD / RTOS" sequence.')
                 else:
                     prev_val = new_val
+                    
+        return
 
     #---------------------------------------------------------------------------
+
+    # Keithley 2450 SourceMeter
+    """
+    The Keithley 2450 SourceMeter is also a 'slow' device which can't keep up 
+    with the current poll rate of 20 ms. We therefore incorporate a separate move
+    function for the device.
+    For well-documented code, please check the "Devices that can apply a setpoint instantly",
+    as this code is derived from there.
+    """
+    if device.type == 'Keithley 2450 SourceMeter':
+        dt = 0.1
+        read_command = getattr(device, 'read_' + variable)
+        cur_val = float(read_command())
+        time.sleep(dt)
+        Dt = abs(setpoint - cur_val) / (rate * 2) # Rate doubles, because we also wait for an extra read session
+        nSteps = int(round(Dt / dt))
+        if nSteps != 0:
+            move_curve = np.linspace(cur_val, setpoint, nSteps)
+            for i in range(nSteps):
+                if not silent:
+                    cur_str = convertUnits(cur_val)
+                    set_str = convertUnits(setpoint) 
+                    print(end='\r')
+                    print(('Setpoint: ' + set_str.ljust(8) + ' | Current value: ' + cur_str.ljust(8)).ljust(80), end='\r')
+                    # Apply setpoint
+                    write_command = getattr(device, 'write_' + variable)
+                    write_command(move_curve[i])
+                    time.sleep(dt)
+                    cur_val = read_command()
+                    time.sleep(dt)
+        else:
+            write_command = getattr(device, 'write_' + variable)
+            write_command(setpoint)
+        if not silent:    
+            print('    ' + device.__class__.__name__ + '.' + variable + ' has moved to its setpoint.')
+        return
 
     # Devices that can apply a setpoint instantly
     """
@@ -212,7 +253,7 @@ def move(device, variable, setpoint, rate):
     # Get current Value
     read_command = getattr(device, 'read_' + variable)
     cur_val = float(read_command())
-
+    
     # Determine number of steps
     Dt = abs(setpoint - cur_val) / rate
     nSteps = int(round(Dt / dt))
@@ -222,18 +263,18 @@ def move(device, variable, setpoint, rate):
         move_curve = np.linspace(cur_val, setpoint, nSteps)
         
         # We only want to show a progress bar when moving the device takes more than 2 sec (so use 1.5 for move time because it excludes communication time, etc.)
-        if nSteps * dt > 1.5:
-            printProgressBar(0, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
+        if not silent:
+            if nSteps * dt > 1.5:
+                printProgressBar(0, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
         for i in range(nSteps):
             write_command = getattr(device, 'write_' + variable)
             write_command(move_curve[i])
             time.sleep(dt)
-            if nSteps * dt > 2 and i % 5 == 0:
-                printProgressBar(i + 1, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
-            if nSteps * dt > 2 and i == range(nSteps)[-1]:
-                printProgressBar(nSteps, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
-        # Always finish with writing the setpoint as final value
-        write_command(setpoint)
+            if not silent:
+                if nSteps * dt > 2 and i % 5 == 0:
+                    printProgressBar(i + 1, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
+                if nSteps * dt > 2 and i == range(nSteps)[-1]:
+                    printProgressBar(nSteps, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
     else:
         write_command = getattr(device, 'write_' + variable)
         write_command(setpoint)
@@ -267,7 +308,8 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
     For measurements, the 'measurement dictionary', meas_dict, is used.
     """
     print('Starting a sweep of "' + sweepdev + '" from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' ('+ str(scale) + ' spacing)' +' steps with rate ' + str(rate) + '.')
-
+    print('----------------------------------------------------------------------')
+    
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
         md = meas_dict
@@ -306,21 +348,46 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
     print('Moving to the initial value...')
     move(device, variable, start, rate)
 
+    print('Starting to sweep.')
+    timer = []
+    ETA = 0
     # Perform sweep
     for i in range(npoints):
+        t_start = time.time()
+        if len(timer) > 0:
+            ETA = np.mean(timer) * (npoints - i) + t_start
+            ETAstr = datetime.fromtimestamp(ETA).strftime('%d-%m-%Y %H:%M:%S')
         # Move to measurement value
-        print('Sweeping to: {}'.format(sweep_curve[i]))
-        move(device, variable, sweep_curve[i], rate)
+        '''
+        To make sure that every print statement is completely overwritten, pad with at least 5 extra spaces (in case the setpoint is a 5-digit value).
+        In addition, pretty format small values.
+        '''
+        
+        cur_var = sweep_curve[i]
+        var_str = convertUnits(cur_var)
+                    
+        print(end='\r')
+        print(('    Setpoint: ' + var_str.ljust(10) + ' | Moving to setpoint...').ljust(80), end='\r')
+        if len(timer) > 0:
+            print(end='\r')
+            print(('    Setpoint: ' + var_str.ljust(10) + ' | Moving to setpoint... | Finished at: ' + ETAstr).ljust(80), end='\r')
+        move(device, variable, sweep_curve[i], rate, silent=True)
         # Wait, then measure
-        print('   Waiting for measurement...')
+        print(end='\r')
+        print(('    Setpoint: ' + var_str.ljust(10) + ' | Measuring...         ').ljust(80), end='\r')
+        if len(timer) > 0:
+            print(end='\r')
+            print(('    Setpoint: ' + var_str.ljust(10) + ' | Measuring...          | Finished at: ' + ETAstr).ljust(80), end='\r')
         time.sleep(dtw)
-        print('   Performing measurement.')
         data = np.hstack((sweep_curve[i], measure()))
 
         # Add data to file
         datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
         with open(filename, 'a') as file:
             file.write(datastr + '\n')
+        t_end = time.time()
+        timer.append(t_end - t_start)
+    print('\nSweep finished.')
 
 def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
     """
@@ -329,24 +396,32 @@ def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
     Note: <tmin> is in seconds.
     """
     print('Waiting for "'  + variable + '" to be within ' + str(setpoint) + ' +/- ' + str(threshold) + ' for at least ' + str(tmin) + ' seconds.')
+    print('----------------------------------------------------------------------')
     stable = False
     t_stable = 0
     while not stable:
         # Read value
         read_command = getattr(device, 'read_' + variable)
         cur_val = float(read_command())
+        var_str = convertUnits(cur_val)
         # Determine if value within threshold
         if abs(cur_val - setpoint) <= threshold:
             # Add time to counter
-            t_stable += 10
+            print(end='\r')
+            print(('    Current value: ' + var_str.ljust(10) + ' | Value within threshold, waiting (' + str(t_stable) + ' s)...         ').ljust(80), end='\r')
+            t_stable += 5
         else:
             # Reset counter
             t_stable = 0
-        time.sleep(10)
+            print(end='\r')
+            print(('    Current value: ' + var_str.ljust(10) + ' | Value outside threshold...         ').ljust(80), end='\r')
+        time.sleep(5)
         # Check if t_stable > tmin
         if t_stable >= tmin:
             stable = True
-            print('The device is stable.')
+            print(end='\r')
+            print(('    Current value: ' + var_str.ljust(10) + ' | Value within threshold, waiting (' + str(t_stable) + ' s)...         ').ljust(80), end='\r')
+            print('\nThe device is stable.')
 
 def record(dt, npoints, filename, append=False, md=None, silent=False):
     """
@@ -354,6 +429,7 @@ def record(dt, npoints, filename, append=False, md=None, silent=False):
     will record data for a number of <npoints> and store it in <filename>.
     """
     print('Recording data with a time interval of ' + str(dt) + ' seconds for (up to) ' + str(npoints) + ' points. Hit <Ctrl+C> to abort.')
+    print('----------------------------------------------------------------------')
     if silent:
         print('   Silent mode enabled. Measurements will not be logged in the console.')
 
@@ -382,7 +458,8 @@ def record(dt, npoints, filename, append=False, md=None, silent=False):
     # Perform record
     for i in range(npoints):
         if not silent:
-            print('   Performing measurement at t = ' + str(i*dt) + ' s.')
+            print(end='\r')
+            print('   t = ' + str(i*dt) + ' s | Measuring... ', end='\r')
         data = measure()
         datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ')[1:-1]).replace('\n', '')
         with open(filename, 'a') as file:
@@ -395,6 +472,7 @@ def record_until(dt, filename, device, variable, operator, value, maxnpoints, md
     will record data for a number of <npoints> and store it in <filename>.
     """
     print('Recording data until ' + variable + ' ' + operator + ' ' + str(value) + '.')
+    print('----------------------------------------------------------------------')
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
         md = meas_dict
@@ -420,7 +498,8 @@ def record_until(dt, filename, device, variable, operator, value, maxnpoints, md
     i = 0      
     # Perform record
     while not reached:
-        print('Performing measurement at t = ' + str(i*dt) + ' s.')
+        print(end='\r')
+        print('Performing measurement at t = ' + str(i*dt) + ' s.', end='\r')
         data = measure()
         datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ')[1:-1]).replace('\n', '')
         with open(filename, 'a') as file:
@@ -460,6 +539,7 @@ def multisweep(sweep_list, npoints, filename, md=None):
     and then moves all devices again to their next setpoint.
     """
     print('Starting a multisweep.')
+    print('----------------------------------------------------------------------')
 
     if md is None:
         md = meas_dict
@@ -496,15 +576,29 @@ def multisweep(sweep_list, npoints, filename, md=None):
         sweep_curve_list.append(sweep_curve)
 
     # Perform sweep
+    timer = []
     for i in range(npoints):
+        t_start = time.time()
+        if len(timer) > 0:
+            ETA = np.mean(timer) * (npoints - i) + t_start
+            ETAstr = datetime.fromtimestamp(ETA).strftime('%d-%m-%Y %H:%M:%S')
         # Move to the measurement values
-        print('   Sweeping all variables. First variable to: {}'.format(sweep_curve_list[0][i]))
+        var_str = convertUnits(sweep_curve_list[0][i])
+        print(end='\r')
+        print(('    1st setpoint: ' + var_str.ljust(10) + ' | Moving to setpoint...').ljust(80), end='\r')
+        if len(timer) > 0:
+            print(end='\r')
+            print(('    1st setpoint: ' + var_str.ljust(10) + ' | Moving to setpoint... | Finished at: ' + ETAstr).ljust(80), end='\r')
+
         for j in range(len(sweep_list)):
             move(sweep_list[j][0], sweep_list[j][1], sweep_curve_list[j][i], sweep_list[j][4])
         # Wait, then measure
-        print('      Waiting for measurement...')
+        print(end='\r')
+        print(('    1st setpoint: ' + var_str.ljust(10) + ' | Measuring...         ').ljust(80), end='\r')
+        if len(timer) > 0:
+            print(end='\r')
+            print(('    1st setpoint: ' + var_str.ljust(10) + ' | Measuring...          | Finished at: ' + ETAstr).ljust(80), end='\r')
         time.sleep(dtw)
-        print('      Performing measurement.')
         data_setp = np.array([])
         for j in range(len(sweep_list)):
             data_setp = np.append(data_setp, sweep_curve_list[j][i])
@@ -514,6 +608,9 @@ def multisweep(sweep_list, npoints, filename, md=None):
         datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
         with open(filename, 'a') as file:
             file.write(datastr + '\n')
+        t_end = time.time()
+        timer.append(t_end - t_start)
+    print('\nMultisweep finished.')
 
 def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard', scale='lin', md=None):
     """
@@ -959,7 +1056,7 @@ def DACsyncing(start, stop, npoints):
     # Calculate the size of one dacstep
     dac_quantum = 4 / (2**16 - 1)
     # For the 'user input' <start>, <end> and <npoints>, calculate the requested stepsize
-    req_stepsize = np.abs((stop - start) / npoints)
+    req_stepsize = (stop - start) / npoints
     # Compute the closest number of dacsteps, which will be the new increment
     dac_stepsize = int(round(req_stepsize / dac_quantum))
     if dac_stepsize < 1:
@@ -1011,3 +1108,33 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     # Print New Line on Complete
     if iteration == total: 
         print()    
+        
+def convertUnits(val):
+    '''
+    Takes a numeric value (float) as input and provides a string with engineering suffix.
+        1E-9 = 1n
+        1E-6 = 1u
+        1E-3 = 1m
+        1E0 = 1
+        1E3 = 1k
+        1E6 = 1M
+        1E9 = 1G
+    '''
+    # Small numbers
+    if val < 1:
+        if val < 1E-3:
+            if val < 1E-6:
+                return str(np.round(val * 1E9, 4)) + 'n'
+            return  str(np.round(val * 1E6, 4)) + 'u'
+        return str(np.round(val * 1E3, 4)) + 'm'
+        if val == 0.0:
+            return '0'
+     # Large numbers
+    elif val > 1E3:
+        if val > 1E6:
+            if val > 1E9:
+                return str(np.round(val / 1E9, 4)) + 'G'
+            return str(np.round(val / 1E6, 4)) + 'M'
+        return str(np.round(val / 1E3, 4)) + 'k'
+    else:
+        return str(np.round(val, 4))
