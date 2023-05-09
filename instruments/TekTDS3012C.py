@@ -3,11 +3,12 @@
 Module to interact with a Tektronix AFG1022.
 Uses pyVISA to communicate with the USB/GPIB device.
 
-Version 2.0 (2022-04-05)
+Version 2.1 (2023-05-09)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 daan@daanwielens.com
 """
+
 
 import pyvisa as visa
 import numpy as np
@@ -17,7 +18,7 @@ from struct import unpack
 class WrongInstrErr(Exception):
     """
     A connection was established to the instrument, but the instrument
-    is not a Tektronix TDS 3012 series. Please retry with the correct
+    is not a Tektronix TDS 3012C. Please retry with the correct
     GPIB address. Make sure that each device has an unique address.
     """
     pass
@@ -89,6 +90,10 @@ class TekTDS3012C:
     
     def read_vertdiv2(self):
         return float(self.query('CH2:SCA?').strip('\n'))
+    
+    def write_singleseq(self):
+        # Simulates button press of SINGLE/SEQ button
+        self.write('FPANEL:PRESS SINGLESEQ\n')
     
     # Preamble acquisition
     def get_pre1(self):
