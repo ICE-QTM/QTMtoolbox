@@ -457,7 +457,7 @@ def record(dt, npoints, filename, append=False, md=None, silent=False):
     for i in range(npoints):
         if not silent:
             print(end='\r')
-            print('   t = ' + str(i*dt) + ' s | Measuring... ', end='\r')
+            print('   t = ' + (str(np.round(i*dt, 2)) + ' s').ljust(10) + ' | Measuring... ', end='\r')
         data = measure()
         datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ')[1:-1]).replace('\n', '')
         with open(filename, 'a') as file:
