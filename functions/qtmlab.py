@@ -216,12 +216,12 @@ def move(device, variable, setpoint, rate, silent=False):
     as this code is derived from there.
     """
     if device.type == 'Keithley 2450 SourceMeter':
-        dt = 0.1
+        dtK = 0.1
         read_command = getattr(device, 'read_' + variable)
         cur_val = float(read_command())
-        time.sleep(dt)
+        time.sleep(dtK)
         Dt = abs(setpoint - cur_val) / (rate * 2) # Rate doubles, because we also wait for an extra read session
-        nSteps = int(round(Dt / dt))
+        nSteps = int(round(Dt / dtK))
         if nSteps != 0:
             move_curve = np.linspace(cur_val, setpoint, nSteps)
             for i in range(nSteps):
@@ -233,9 +233,9 @@ def move(device, variable, setpoint, rate, silent=False):
                     # Apply setpoint
                     write_command = getattr(device, 'write_' + variable)
                     write_command(move_curve[i])
-                    time.sleep(dt)
+                    time.sleep(dtK)
                     cur_val = read_command()
-                    time.sleep(dt)
+                    time.sleep(dtK)
         else:
             write_command = getattr(device, 'write_' + variable)
             write_command(setpoint)
@@ -262,22 +262,20 @@ def move(device, variable, setpoint, rate, silent=False):
         # Create list of setpoints and change setpoint by looping through array
         move_curve = np.linspace(cur_val, setpoint, nSteps)
         
-        # We only want to show a progress bar when moving the device takes more than 2 sec (so use 1.5 for move time because it excludes communication time, etc.)
-        if not silent:
-            if nSteps * dt > 1.5:
-                printProgressBar(0, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
         for i in range(nSteps):
             write_command = getattr(device, 'write_' + variable)
             write_command(move_curve[i])
             time.sleep(dt)
             if not silent:
-                if nSteps * dt > 2 and i % 5 == 0:
-                    printProgressBar(i + 1, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
-                if nSteps * dt > 2 and i == range(nSteps)[-1]:
-                    printProgressBar(nSteps, nSteps, device.__class__.__name__ + '.' + variable + ' to ' + str(setpoint), length=50)
+                cur_str = convertUnits(move_curve[i])
+                set_str = convertUnits(setpoint) 
+                print(end='\r')
+                print((('    ' + device.__class__.__name__ + '.' + variable).ljust(20) + ' | Setpoint: ' + set_str.ljust(8) + ' | Current value: ' + cur_str.ljust(8)).ljust(80), end='\r')
     else:
         write_command = getattr(device, 'write_' + variable)
         write_command(setpoint)
+    if not silent:
+        print(end='\r')
 
 def measure(md=None):
     """
@@ -623,6 +621,7 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
     print('Starting a "' + mode + '" megasweep of the following variables:')
     print('1: "' + variable1 + '" from ' + str(start1) + ' to ' + str(stop1) + ' in ' + str(npoints1) + ' steps with rate ' + str(rate1))
     print('2: "' + variable2 + '" from ' + str(start2) + ' to ' + str(stop2) + ' in ' + str(npoints2) + ' steps with rate ' + str(rate2))
+    print('----------------------------------------------------------------------')
 
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
@@ -660,25 +659,45 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
         file.write(header + '\n')
 
     if mode=='standard':
+        timer_slow = []
+        timer_fast = []
         for i in range(npoints1):
+            t_slow_start = time.time()
             # Move device1 to value1
-            print('Measuring for device 1 at {}'.format(sweep_curve1[i]))
-            move(device1, variable1, sweep_curve1[i], rate1)
+            move(device1, variable1, sweep_curve1[i], rate1, silent=True)
             # Sweep variable2
+            t_slow_end = time.time() # This times the duration of a 'move' of the slow device
+            timer_slow.append(t_slow_end - t_slow_start)
             for j in range(npoints2):
+                t_fast_start = time.time()
+                if len(timer_fast) > 0:
+                    ETA = np.mean(timer_slow) * (npoints1 - i) + np.mean(timer_fast) * (npoints2 - 1) + np.mean(timer_fast) * (npoints1-i) * npoints2 + t_fast_start
+                    ETAstr = datetime.fromtimestamp(ETA).strftime('%d-%m-%Y %H:%M:%S')
                 # Move device2 to measurement value
-                print('   Sweeping to: {}'.format(sweep_curve2[j]))
-                move(device2, variable2, sweep_curve2[j], rate2)
-                # Wait, then measure
-                print('      Waiting for measurement...')
+                move(device2, variable2, sweep_curve2[j], rate2, silent=True)
+                setp1_str = convertUnits(sweep_curve1[i])
+                setp2_str = convertUnits(sweep_curve2[j])                
+                # Wait, then measure                
+                print(end='\r')
+                print(('    (1): ' + setp1_str.ljust(10) + ' | (2): ' + setp2_str.ljust(10) + ' | Moving to setpoint...').ljust(100), end='\r')
+                if len(timer_fast) > 0:
+                    print(end='\r')
+                    print(('    (1): ' + setp1_str.ljust(10) + ' | (2): ' + setp2_str.ljust(10) + ' | Moving to setpoint... | Finished at: ' + ETAstr).ljust(100), end='\r')                
                 time.sleep(dtw)
-                print('      Performing measurement.')
+                print(end='\r')
+                print(('    (1): ' + setp1_str.ljust(10) + ' | (2): ' + setp2_str.ljust(10) + ' | Measuring...         ').ljust(100), end='\r')
+                if len(timer_fast) > 0:
+                    print(end='\r')
+                    print(('    (1): ' + setp1_str.ljust(10) + ' | (2): ' + setp2_str.ljust(10) + ' | Measuring...          | Finished at: ' + ETAstr).ljust(100), end='\r')
                 data = np.hstack((sweep_curve1[i], sweep_curve2[j], measure()))
 
                 #Add data to file
                 datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
                 with open(filename, 'a') as file:
                     file.write(datastr + '\n')
+                t_fast_end = time.time()
+                timer_fast.append(t_fast_end - t_fast_start)
+        print('\nMegasweep finished.')
 
     elif mode=='updown':
         for i in range(npoints1):
@@ -1124,11 +1143,11 @@ def convertUnits(val):
     if val < 1:
         if val < 1E-3:
             if val < 1E-6:
+                if val == 0.0:
+                    return '0'
                 return str(np.round(val * 1E9, 4)) + 'n'
             return  str(np.round(val * 1E6, 4)) + 'u'
         return str(np.round(val * 1E3, 4)) + 'm'
-        if val == 0.0:
-            return '0'
      # Large numbers
     elif val > 1E3:
         if val > 1E6:
