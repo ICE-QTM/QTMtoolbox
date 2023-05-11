@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.7.2 (2023-05-09)
+Version 2.7.3 (2023-05-11)
 
 Contributors:
 -- University of Twente --
@@ -30,7 +30,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.7.2 (2023-05-09)')
+print('QTMtoolbox version 2.7.3 (2023-05-11)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -1139,19 +1139,20 @@ def convertUnits(val):
         1E6 = 1M
         1E9 = 1G
     '''
+    abs_val = np.abs(val)
     # Small numbers
-    if val < 1:
-        if val < 1E-3:
-            if val < 1E-6:
-                if val == 0.0:
+    if abs_val < 1:
+        if abs_val < 1E-3:
+            if abs_val < 1E-6:
+                if abs_val == 0.0:
                     return '0'
                 return str(np.round(val * 1E9, 4)) + 'n'
             return  str(np.round(val * 1E6, 4)) + 'u'
         return str(np.round(val * 1E3, 4)) + 'm'
      # Large numbers
-    elif val > 1E3:
-        if val > 1E6:
-            if val > 1E9:
+    elif abs_val > 1E3:
+        if abs_val > 1E6:
+            if abs_val > 1E9:
                 return str(np.round(val / 1E9, 4)) + 'G'
             return str(np.round(val / 1E6, 4)) + 'M'
         return str(np.round(val / 1E3, 4)) + 'k'
