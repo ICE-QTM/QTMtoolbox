@@ -3,7 +3,7 @@
 Module to interact with a Keysight 33500B series waveform generator.
 Uses pyVISA to communicate with the USB/GPIB device.
 
-Version 1.2 (2023-04-25)
+Version 1.3 (2023-05-24)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 d.h.wielens@utwente.nl
@@ -151,8 +151,8 @@ class Keysight33500B:
         if (val >= 16E-9) and (val <= 1/self.read_freq()):
             self.visa.write('SOUR:FUNC:PULS:WIDT ' + str(val))
         else:
-            raise ValueError('The pulse width should be between 16 ns and 1/f.')          
-   
+            raise ValueError('The pulse width should be between 16 ns and 1/f.')  
+
     def read_load(self):
         resp = self.visa.query('OUTP:LOAD?').strip('\n')
         # Note that the device returns 9.9E+37 if the load is INF.
@@ -163,7 +163,7 @@ class Keysight33500B:
             self.visa.write('OUTP:LOAD INF')
         else:
             val = float(val)
-            self.visa.write('OUTP:LOAD' + str(val))
+            self.visa.write('OUTP:LOAD ' + str(val))
 
     def square(self, amp, offset, freq, dutycycle=50):
         self.write_waveform('SQU')
@@ -177,9 +177,28 @@ class Keysight33500B:
         self.write_amp(amp)
         self.write_offset(offset)
         self.write_freq(freq)
+        
+    def ramp(self, amp, offset, freq, symm):
+        self.write_waveform('RAMP')
+        self.write_amp(amp)
+        self.write_offset(offset)
+        self.write_freq(freq)
+        self.write_symm(symm)
 
     def write_output(self, val):
         if val in ['ON', 'on', 1]:
             self.visa.write('OUTP 1')
         if val in ['OFF', 'off', 0]:
             self.visa.write('OUTP 0')
+            
+    def read_phase(self):
+        self.visa.write('UNIT:ANGL DEG')
+        return float(self.query('SOUR:PHAS?'))
+
+    def write_phase(self, val):
+        # Set the phase of the waveform in degrees. Default zero, range = [-360, 360]
+        if (val >= -360) and (val <= 360):
+            self.visa.write('UNIT:ANGL DEG')
+            self.visa.write('SOUR:PHAS ' + str(val))
+        else:
+            raise ValueError('The phase should be within -360 and 360 degrees.')
