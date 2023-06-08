@@ -5,10 +5,10 @@ Uses pyVISA to communicate with the GPIB device.
 Assumes GPIB address is of the form GPIB0::<xx>::INSTR where
 <xx> is the device address (number).
 
-Version 1.3 (2020-06-17)
-Daan Wielens - PhD at ICE/QTM
+Version 1.4 (2023-06-08)
+Daan Wielens - Researcher at ICE/QTM
 University of Twente
-daan@daanwielens.com
+d.h.wielens@utwente.nl
 """
 
 import pyvisa as visa
@@ -80,6 +80,16 @@ class Keithley2400:
             self.visa.write('SOUR:VOLT:RANG DEF\n')
         if val in ['MIN', 'min', 'minimum']:
             self.visa.write('SOUR:VOLT:RANG MIN\n')
+            
+    def write_Irange(self, val):
+        if val in ['MAX', 'max', 'maximum', '1.05']:
+            self.visa.write('SOUR:CURR:RANG MAX\n')
+        elif val in ['DEF', 'def', 'default,', '100E-6']:
+            self.visa.write('SOUR:CURR:RANG DEF\n')
+        elif val in ['MIN', 'min', 'minimum', '1E-6']:
+            self.visa.write('SOUR:CURR:RANG MIN\n')
+        else :
+            self.visa.write('SOUR:CURR:RANG ' + str(val) + '\n')
 
     def read_output(self):
         resp = int(self.visa.query('OUTP?').strip('\n'))
@@ -92,3 +102,12 @@ class Keithley2400:
             self.visa.write('OUTP 0\n')
         else:
             print('This is not a valid argument for the Keithley Output command. Your command will be ignored.')
+
+    def read_Vcomptrip(self):
+        # When sourcing current, this returns 1 if the voltage is above the compliance limit and 0 otherwise.
+        resp = int(self.visa.query('SENS:VOLT:PROT:TRIP?').strip('\n'))
+        return resp
+    
+    def read_Icomptrip(self):
+        resp = int(self.visa.query('SENS:CURR:PROT:TRIP?').strip('\n'))
+        return resp
