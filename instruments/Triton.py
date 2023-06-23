@@ -3,10 +3,10 @@
 Module to interact with the Oxford Triton controller pc.
 Uses TCP/IP sockets to communicate with the GPIB device.
 
-Version 3.0 (2021-10-05)
-Daan Wielens - PhD at ICE/QTM
+Version 3.1.1 (2023-06-23)
+Daan Wielens - Researcher at ICE/QTM
 University of Twente
-daan@daanwielens.com
+d.h.wielens@utwente.nl
 
 ----------------------------------------------------------------------------
 The latest version (3.0 and above) uses Python's "exec" function
@@ -89,6 +89,13 @@ class Triton:
              "    self.s.sendall(('READ:DEV:V" + str(i+1) + ":VALV:SIG:STATE\\r\\n').encode())\n" +
              "    resp = self.s.recv(1024).decode().split(':')[-1].strip('\\n')\n" +
              "    return resp")
+        
+    # Create functions for writing whether any valve actuactor must be opened/closed (chan. 1-9) in the system
+    # Provide 'OPEN' or 'CLOSE' or 'TOGGLE' as <val>          
+    for i in range(16):
+        exec("def write_valve" + str(i+1) + "(self, val):\n" +
+             "    self.s.sendall(('SET:DEV:V" + str(i+1) + ":VALV:SIG:STATE:' + str(val) + '\\r\\n').encode())\n" +
+             "    resp = self.s.recv(1024).decode()")
     
     # Get the temperature control channel    
     def read_Tchan(self):
@@ -202,6 +209,7 @@ class Triton:
         self.s.recv(1024)
 
     def write_Hchamber(self, val):
+        # Setpoint is in uW
         self.s.sendall(('SET:DEV:H1:HTR:SIG:POWR:' + str(val) + '\r\n').encode())
         self.s.recv(1024)
 
@@ -212,6 +220,7 @@ class Triton:
         return resp
 
     def write_Hstill(self, val):
+        # Setpoint is in uW
         self.s.sendall(('SET:DEV:H2:HTR:SIG:POWR:' + str(val) + '\r\n').encode())
         self.s.recv(1024)
 
@@ -248,7 +257,7 @@ class Triton:
     # Read the speed of the turbo pump
     def read_turbspeed(self):
         self.s.sendall('READ:DEV:TURB1:PUMP:SIG:SPD\r\n'.encode())
-        resp = self.s.recv(1024).decode().split(':')[-1].strip('Hz\n')
+        resp = float(self.s.recv(1024).decode().split(':')[-1].strip('Hz\n'))
         return resp  
     
     # Read the status (on/off) of the turbo pump
@@ -257,10 +266,15 @@ class Triton:
         resp = self.s.recv(1024).decode().split(':')[-1].strip('\n')
         return resp  
     
+    # Set state of the turbo
+    def write_turbstate(self, val):
+        self.s.sendall(('SET:DEV:TURB1:PUMP:SIG:STATE:' + val + '\r\n').encode())
+        self.s.recv(1024)
+    
     # Read the cumulative operational hours of the turbo pump
     def read_turbhours(self):
         self.s.sendall('READ:DEV:TURB1:PUMP:SIG:HRS\r\n'.encode())
-        resp = self.s.recv(1024).decode().split(':')[-1].strip('h\n')
+        resp = float(self.s.recv(1024).decode().split(':')[-1].strip('h\n'))
         return resp
     
     # Read the status (on/off) of the 3He compressor
