@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.7.3 (2023-05-11)
+Version 2.7.4 (2023-10-23)
 
 Contributors:
 -- University of Twente --
@@ -30,7 +30,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.7.3 (2023-05-11)')
+print('QTMtoolbox version 2.7.4 (2023-10-23)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -271,9 +271,10 @@ def move(device, variable, setpoint, rate, silent=False):
                 set_str = convertUnits(setpoint) 
                 print(end='\r')
                 print((('    ' + device.__class__.__name__ + '.' + variable).ljust(20) + ' | Setpoint: ' + set_str.ljust(8) + ' | Current value: ' + cur_str.ljust(8)).ljust(80), end='\r')
-    else:
-        write_command = getattr(device, 'write_' + variable)
-        write_command(setpoint)
+    
+    # Always finish with writing the actual setpoint
+    write_command = getattr(device, 'write_' + variable)
+    write_command(setpoint)
     if not silent:
         print(end='\r')
 
@@ -589,7 +590,7 @@ def multisweep(sweep_list, npoints, filename, md=None):
             print(('    1st setpoint: ' + var_str.ljust(10) + ' | Moving to setpoint... | Finished at: ' + ETAstr).ljust(80), end='\r')
 
         for j in range(len(sweep_list)):
-            move(sweep_list[j][0], sweep_list[j][1], sweep_curve_list[j][i], sweep_list[j][4])
+            move(sweep_list[j][0], sweep_list[j][1], sweep_curve_list[j][i], sweep_list[j][4], silent=True)
         # Wait, then measure
         print(end='\r')
         print(('    1st setpoint: ' + var_str.ljust(10) + ' | Measuring...         ').ljust(80), end='\r')
