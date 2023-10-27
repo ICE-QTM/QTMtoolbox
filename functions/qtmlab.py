@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.7.4 (2023-10-23)
+Version 2.7.5 (2023-10-27)
 
 Contributors:
 -- University of Twente --
@@ -30,7 +30,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.7.4 (2023-10-23)')
+print('QTMtoolbox version 2.7.5 (2023-10-27)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -1032,7 +1032,7 @@ def snapshot(md=None):
             # Loop over attributes, measure property, write to file
             for attr in attr_list:
                 # Skip  type objects
-                if not 'auto' in attr and not 'read_dacs' in attr and attr != 'read_dac':
+                if not 'auto' in attr and not 'read_dacs' in attr and attr != 'read_dac' and attr != 'read_dac_byte':
                     meas_command = getattr(devobj, attr)
                     data = meas_command()
                     file.write(devname + '.' + attr + ': ' + str(data) + '\n')
