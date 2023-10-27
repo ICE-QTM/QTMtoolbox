@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.7.5 (2023-10-27)
+Version 2.7.6 (2023-10-27)
 
 Contributors:
 -- University of Twente --
@@ -30,7 +30,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.7.5 (2023-10-27)')
+print('QTMtoolbox version 2.7.6 (2023-10-27)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -461,8 +461,12 @@ def record(dt, npoints, filename, append=False, md=None, silent=False):
             print('   t = ' + (str(np.round(i*dt, 2)) + ' s').ljust(10) + ' | Measuring... ', end='\r')
         data = measure()
         datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ')[1:-1]).replace('\n', '')
-        with open(filename, 'a') as file:
-            file.write(datastr + '\n')
+        if append == False:
+            with open(filename, 'a') as file:
+                file.write(datastr + '\n')
+        elif append == True:
+            with open('Data//' + samplename + '//' + filename, 'a') as file:
+                file.write(datastr + '\n')
         time.sleep(dt)
 
 def record_until(dt, filename, device, variable, operator, value, maxnpoints, md=None):
