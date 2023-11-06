@@ -5,17 +5,17 @@ Uses the pySerial module to communicate with the device.
 Assumes the address is of the form COM<xx> where
 <xx> is the relevant port.
 
-We assume that the IVVI rack has 16 DACs.
+We assume that the IVVI rack has 16 DACs and that all DACs are in BIPOLAR mode (+/- 2 V).
 Script based on: http://qtwork.tudelft.nl/~schouten/ivvi/doc-d5/rs232linkformat.txt
 
 The serial connection is opened/closed after every command. This increases
 the stability of the dac and reduces the chance to setup multiple connections
 to the device.
 
-Version 2.2 (2022-10-28)
-Daan Wielens - PhD at ICE/QTM
+Version 2.3 (2023-11-04)
+Daan Wielens - Researcher at ICE/QTM
 University of Twente
-daan@daanwielens.com
+d.h.wielens@utwente.nl
 """
 
 import serial
@@ -52,14 +52,30 @@ class IVVI:
         
         # Range checks
         if val > 2:
-            print('DAC1 setpoint > 2. The setpoint will be set to 2.')
+            print('DAC setpoint > 2. The setpoint will be set to 2.')
             val = 2
         elif val < -2:
-            print('DAC1 setpoint < -2. The setpoint will be set to -2.')
+            print('DAC setpoint < -2. The setpoint will be set to -2.')
             val = -2    
         
         # Change setpoint
         bytevalue = int(((val+2)/4) * 65535).to_bytes(length=2, byteorder='big') 
+        set_msg = bytes([7, 0, 2, 1, dac]) + bytevalue
+        self.ser.open()
+        self.ser.write(set_msg)
+        self.ser.read(2)
+        self.ser.close()
+        
+    def write_dac_byte(self, dac, val):
+        val = int(val)
+        dac = int(dac)
+        
+        # Range checks
+        if (val < 0) or (val > 65535):
+            raise ValueError('The DAC value must be between 0 and 65535 (2^16 - 1)')
+        
+        # Change setpoint
+        bytevalue = val.to_bytes(length=2, byteorder='big')
         set_msg = bytes([7, 0, 2, 1, dac]) + bytevalue
         self.ser.open()
         self.ser.write(set_msg)
@@ -96,6 +112,11 @@ class IVVI:
     for i in range(16):
         exec("def write_dac" + str(i+1) + "(self, val):\n" +
              "    self.write_dac(" + str(i+1) + ", str(val))")
+    
+    # Create function for writing any DAC channel (chan. 1-16) as byte values
+    for i in range(16):
+        exec("def write_dac_byte" + str(i+1) + "(self, val):\n" +
+             "    self.write_dac_byte(" + str(i+1) + ", str(val))")
         
     def write_dacszero(self):
         for i in range(16):
