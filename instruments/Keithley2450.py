@@ -5,7 +5,7 @@ Uses pyVISA to communicate with the GPIB device.
 Assumes GPIB address is of the form GPIB0::<xx>::INSTR where
 <xx> is the device address (number).
 
-Version 2.2 (2022-12-14)
+Version 2.3 (2023-12-11)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -194,7 +194,27 @@ class Keithley2450:
             return float(self.query('SENS:VOLT:AVER:COUN?'))
         elif self.sense_func == 'CURR:DC':
             return float(self.query('SENS:CURR:AVER:COUN?'))
+    
+    # Select local (2-wire == 0/OFF) or remote (4-wire == 1/ON) sensing. 
+    def write_remotesense(self, val):
+        if val in [1, 'On', 'on', 'ON']:
+            if self.sense_func == 'VOLT:DC':
+                self.visa.write('SENS:VOLT:RSEN ON')
+            if self.sense_func == 'CURR:DC':
+                self.visa.write('SENS:CURR:RSEN ON')
+        elif val in [0, 'Off', 'off', 'OFF']:
+            if self.sense_func == 'VOLT:DC':
+                self.visa.write('SENS:VOLT:RSEN OFF')
+            if self.sense_func == 'CURR:DC':
+                self.visa.write('SENS:CURR:RSEN OFF')
+        else:
+            raise ValueError('The specified argument is incorrect.')
         
+    def read_remotesense(self):
+        if self.sense_func == 'VOLT:DC':
+            return self.visa.query('SENS:VOLT:RSEN?').strip('\n')
+        if self.sense_func == 'CURR:DC':
+            return self.visa.query('SENS:CURR:RSEN?').strip('\n')        
             
     def info(self):
         print('-----------------------------------------------------')
