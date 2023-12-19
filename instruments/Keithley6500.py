@@ -5,7 +5,7 @@ Uses pyVISA to communicate with the GPIB device.
 Assumes GPIB address is of the form GPIB0::<xx>::INSTR where
 <xx> is the device address (number).
 
-Version 1.1 (2022-12-20)
+Version 2.0 (2023-12-03)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 daan@daanwielens.com
@@ -42,6 +42,8 @@ class Keithley6500:
         self.visa.timeout = 5000
         # Beep for measurement
         self.notify = False
+        # Get current config of the device
+        self.config = self.visa.query('FUNC?').strip('\n')
     
     def get_iden(self):
         resp = str(self.visa.query('*IDN?'))
@@ -57,6 +59,11 @@ class Keithley6500:
     def close(self):
         self.visa.close()
         
+    # Read function type
+    def read_func(self):
+        return self.query('FUNC?').strip('\n')
+    
+    # Make a sound    
     def beep(self, frequency, duration):
         self.visa.write('SYST:BEEP ' + str(frequency) + ', ' + str(duration))
         time.sleep(duration + 0.02)
@@ -68,32 +75,37 @@ class Keithley6500:
             self.beep(2093, 0.1)
         return float(self.query('READ?'))
     
-    # Set the device to DC Voltage measurement mode and return one reading    
+    # If the device is in DC voltage mode, return one reading. Otherwise, return a warning and a very high value    
     def read_dcv(self):
-        self.write('FUNC "VOLT"')
-        if self.notify:
-            self.beep(1569.98, 0.05)
-            self.beep(2093, 0.1)
-        return self.read()
+        if self.config == 'VOLT:DC':
+            return self.read()
+        else:
+            print(' <!> Warning: the Keithley 6500 is not in DC voltage measurement mode. The code returns 9E10 as value.')
+            return(9E10)
    
-    # Set the device to AC Voltage measurement mode and return one reading
+    # If the device is in AC voltage mode, return one reading. Otherwise, return a warning and a very high value
     def read_acv(self):
-        self.write('FUNC "VOLT:AC"')
-        return self.read()
-    
-    # Set the device to DC Current measurement mode and return one reading
+        if self.config == 'VOLT:AC':
+            return self.read()
+        else:
+            print(' <!> Warning: the Keithley 6500 is not in AC voltage measurement mode. The code returns 9E10 as value.')
+            return(9E10)
+        
+    # If the device is in DC current mode, return one reading. Otherwise, return a warning and a very high value
     def read_dci(self):
-        self.write('FUNC "CURR"')
-        return self.read()
+        if self.config == 'CURR:DC':
+            return self.read()
+        else:
+            print(' <!> Warning: the Keithley 6500 is not in DC current measurement mode. The code returns 9E10 as value.')
+            return(9E10)
     
-    # Set the device to AC Current measurement mode and return one reading
+    # If the device is in AC current mode, return one reading. Otherwise, return a warning and a very high value
     def read_aci(self):
-        self.write('FUNC "CURR:AC"')
-        return self.read()
-    
-    # Read function type
-    def read_func(self):
-        return self.query('FUNC?').strip('\n')
+        if self.config == 'CURR:AC':
+            return self.read()
+        else:
+            print(' <!> Warning: the Keithley 6500 is not in AC current measurement mode. The code returns 9E10 as value.')
+            return(9E10)
     
     # Write function type
     def write_func(self, val):
