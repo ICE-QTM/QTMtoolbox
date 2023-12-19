@@ -3,7 +3,7 @@
 Module to interact with the Oxford Triton controller pc.
 Uses TCP/IP sockets to communicate with the GPIB device.
 
-Version 3.1.1 (2023-06-23)
+Version 3.2 (2023-12-19)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 d.h.wielens@utwente.nl
@@ -75,6 +75,13 @@ class Triton:
         exec("def write_Tenab" + str(i+1) + "(self, val):\n" +
              "    self.s.sendall(('SET:DEV:T" + str(i+1) + ":TEMP:MEAS:ENAB:' + str(val) + '\\r\\n').encode())\n" +
              "    resp = self.s.recv(1024).decode()")
+
+    # Create functions for reading temperature channel excitation voltages (chan. 1-16) [Assumes voltage excitation]
+    for i in range(16):
+        exec("def read_Texc" + str(i+1) + "(self):\n" +
+             "    self.s.sendall(('READ:DEV:T" + str(i+1) + ":TEMP:EXCT:MAG\\r\\n').encode())\n" +
+             "    resp = self.s.recv(1024).decode().split(':')[-1].strip('V\\n')\n" +
+             "    return float(resp)")
         
     # Create functions for reading any pressure sensor (chan. 1-6) in the system
     for i in range(16):
@@ -295,6 +302,48 @@ class Triton:
         resp = self.s.recv(1024).decode().split(':')[-1].strip('\n')
         # Note that this response gets ALL parameters of the PTR compressor!
         return resp     
+
+    # Read PTR pressure on the high side (bar)
+    def read_PTRhigh(self):
+        self.s.sendall('READ:DEV:C1:PTC:SIG:HHP\r\n'.encode())
+        resp = float(self.s.recv(1024).decode().split(':')[-1].strip('B\n'))
+        return resp
+
+    # Read PTR pressure on the low side (bar)
+    def read_PTRlow(self):
+        self.s.sendall('READ:DEV:C1:PTC:SIG:HLP\r\n'.encode())
+        resp = float(self.s.recv(1024).decode().split(':')[-1].strip('B\n'))
+        return resp
+    
+    # Read PTR H2O in temperature (deg C)
+    def read_PTRwaterin(self):
+        self.s.sendall('READ:DEV:C1:PTC:SIG:WIT\r\n'.encode())
+        resp = float(self.s.recv(1024).decode().split(':')[-1].strip('C\n'))
+        return resp
+
+    # Read PTR H2O out temperature (deg C)
+    def read_PTRwaterout(self):
+        self.s.sendall('READ:DEV:C1:PTC:SIG:WOT\r\n'.encode())
+        resp = float(self.s.recv(1024).decode().split(':')[-1].strip('C\n'))
+        return resp
+
+    # Read PTR He gas temperature (deg C)
+    def read_PTRhelium(self):
+        self.s.sendall('READ:DEV:C1:PTC:SIG:HT\r\n'.encode())
+        resp = float(self.s.recv(1024).decode().split(':')[-1].strip('C\n'))
+        return resp
+    
+    # Read PTR motor current (A)
+    def read_PTRmotor(self):
+        self.s.sendall('READ:DEV:C1:PTC:SIG:MCUR\r\n'.encode())
+        resp = float(self.s.recv(1024).decode().split(':')[-1].strip('A\n'))
+        return resp
+    
+    # Read PTR He gas temperature (deg C)
+    def read_PTRhours(self):
+        self.s.sendall('READ:DEV:C1:PTC:SIG:HRS\r\n'.encode())
+        resp = float(self.s.recv(1024).decode().split(':')[-1].strip('h\n'))
+        return resp
     
     # Read the list of assigned temperature channels in the Triton software
     def read_Tchandefs(self):
