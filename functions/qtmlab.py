@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.7.6 (2023-10-27)
+Version 2.7.7 (2023-12-19)
 
 Contributors:
 -- University of Twente --
@@ -1036,7 +1036,7 @@ def snapshot(md=None):
             # Loop over attributes, measure property, write to file
             for attr in attr_list:
                 # Skip  type objects
-                if not 'auto' in attr and not 'read_dacs' in attr and attr != 'read_dac' and attr != 'read_dac_byte':
+                if not 'auto' in attr and not 'read_dacs' in attr and attr != 'read_dac' and attr != 'read_dac_byte' and attr != 'read_conttrig':
                     meas_command = getattr(devobj, attr)
                     data = meas_command()
                     file.write(devname + '.' + attr + ': ' + str(data) + '\n')
