@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.7.7 (2023-12-19)
+Version 2.7.7 (2024-01-03)
 
 Contributors:
 -- University of Twente --
@@ -876,24 +876,42 @@ def multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename, md=No
         sweep_curve_list2.append(sweep_curve)
 
     # --- Perform megasweep ---
+    timer_slow = []
+    timer_fast = []
     # Sweep slow axis
     for i in range(npoints1):
+        t_slow_start = time.time()
         # Move to the measurement values
-        print('   Sweeping all "list1" variables. First variable to: {}'.format(sweep_curve_list1[0][i]))
         for j in range(len(sweep_list1)):
-            move(sweep_list1[j][0], sweep_list1[j][1], sweep_curve_list1[j][i], sweep_list1[j][4])
-
+            move(sweep_list1[j][0], sweep_list1[j][1], sweep_curve_list1[j][i], sweep_list1[j][4], silent=True)
+        t_slow_end = time.time()
+        timer_slow.append(t_slow_end - t_slow_start) # This times the duration of a 'move' of all slow devices
+        
         # Sweep fast axis
+        t_fast_start = time.time()
+        if len(timer_fast) > 0:
+            ETA = np.mean(timer_slow) * (npoints1 - i) + np.mean(timer_fast) * (npoints2 - 1) + np.mean(timer_fast) * (npoints1-i) * npoints2 + t_fast_start
+            ETAstr = datetime.fromtimestamp(ETA).strftime('%d-%m-%Y %H:%M:%S')
         for k in range(npoints2):
             # Move to the measurement values
-            print('   Sweeping all "list2" variables. First variable to: {}'.format(sweep_curve_list2[0][k]))
             for l in range(len(sweep_list2)):
-                move(sweep_list2[l][0], sweep_list2[l][1], sweep_curve_list2[l][k], sweep_list2[l][4])
-            # Wait, then measure
-            print('      Waiting for measurement...')
+                move(sweep_list2[l][0], sweep_list2[l][1], sweep_curve_list2[l][k], sweep_list2[l][4], silent=True)
+                
+            setp1_str = convertUnits(sweep_curve_list1[0][i])
+            setp2_str = convertUnits(sweep_curve_list2[0][k]) 
+            # Wait, then measure                
+            print(end='\r')
+            print(('    (1.1): ' + setp1_str.ljust(10) + ' | (2.1): ' + setp2_str.ljust(10) + ' | Moving to setpoint...').ljust(100), end='\r')
+            if len(timer_fast) > 0:
+                print(end='\r')
+                print(('    (1.1): ' + setp1_str.ljust(10) + ' | (2.1): ' + setp2_str.ljust(10) + ' | Moving to setpoint... | Finished at: ' + ETAstr).ljust(100), end='\r')                
             time.sleep(dtw)
-            print('      Performing measurement.')
-            
+            print(end='\r')
+            print(('    (1.1): ' + setp1_str.ljust(10) + ' | (2.1): ' + setp2_str.ljust(10) + ' | Measuring...         ').ljust(100), end='\r')
+            if len(timer_fast) > 0:
+                print(end='\r')
+                print(('    (1.1): ' + setp1_str.ljust(10) + ' | (2.1): ' + setp2_str.ljust(10) + ' | Measuring...          | Finished at: ' + ETAstr).ljust(100), end='\r')
+                        
             data_setp = np.array([])
             for m in range(len(sweep_list1)):
                 data_setp = np.append(data_setp, sweep_curve_list1[m][i])
@@ -905,6 +923,9 @@ def multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename, md=No
             datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
             with open(filename, 'a') as file:
                 file.write(datastr + '\n')
+            t_fast_end = time.time()
+            timer_fast.append(t_fast_end - t_fast_start)
+    print('\nMultimegasweep finished.')
 
 def megalistsweep(sweep_list, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev2, mode='standard', md=None):
     """
