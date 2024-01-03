@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.7.7 (2024-01-03)
+Version 2.7.8 (2024-01-03)
 
 Contributors:
 -- University of Twente --
@@ -869,7 +869,6 @@ def multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename, md=No
     for sweepvar in sweep_list1:
         sweep_curve = np.linspace(sweepvar[2], sweepvar[3], npoints1)
         sweep_curve_list1.append(sweep_curve)
-    print(sweep_curve_list1)
     sweep_curve_list2 = []
     for sweepvar in sweep_list2:
         sweep_curve = np.linspace(sweepvar[2], sweepvar[3], npoints2)
@@ -923,8 +922,8 @@ def multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename, md=No
             datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
             with open(filename, 'a') as file:
                 file.write(datastr + '\n')
-            t_fast_end = time.time()
-            timer_fast.append(t_fast_end - t_fast_start)
+        t_fast_end = time.time()
+        timer_fast.append(t_fast_end - t_fast_start)
     print('\nMultimegasweep finished.')
 
 def megalistsweep(sweep_list, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev2, mode='standard', md=None):
