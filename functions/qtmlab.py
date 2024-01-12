@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.7.8 (2024-01-03)
+Version 2.7.9 (2024-01-12)
 
 Contributors:
 -- University of Twente --
@@ -30,7 +30,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.7.6 (2023-10-27)')
+print('QTMtoolbox version 2.7.9 (2024-01-12)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -299,12 +299,16 @@ def measure(md=None):
     return data
 
 
-def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=None, scale='lin'):
+def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=None, scale='lin', precision='Normal'):
     """
     The sweep command sweeps the <variable> of <device>, from <start> to <stop>.
     Sweeping is done at <rate> and <npoints> are recorded to a datafile saved
     as <filename>.
     For measurements, the 'measurement dictionary', meas_dict, is used.
+    
+        - precision:    normal: data will be stored as 8-digit float values (default of numpy: np.get_printoptions()['precision'])
+                        high:   data will be stored as 12-digit float values
+                        ultra:  data will be stored as 18-digit float values
     """
     print('Starting a sweep of "' + sweepdev + '" from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' ('+ str(scale) + ' spacing)' +' steps with rate ' + str(rate) + '.')
     print('----------------------------------------------------------------------')
@@ -381,7 +385,12 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
         data = np.hstack((sweep_curve[i], measure()))
 
         # Add data to file
-        datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
+        if precision == 'Normal':
+            datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
+        elif precision == 'High':
+            datastr = np.array2string(data, separator=', ', precision=12)[1:-1].replace('\n','')
+        elif precision == 'Ultra':
+            datastr = np.array2string(data, separator=', ', precision=18)[1:-1].replace('\n','')
         with open(filename, 'a') as file:
             file.write(datastr + '\n')
         t_end = time.time()
@@ -422,15 +431,24 @@ def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
             print(('    Current value: ' + var_str.ljust(10) + ' | Value within threshold, waiting (' + str(t_stable) + ' s)...         ').ljust(80), end='\r')
             print('\nThe device is stable.')
 
-def record(dt, npoints, filename, append=False, md=None, silent=False):
+def record(dt, npoints, filename, append=False, md=None, silent=False, precision='Normal'):
     """
     The record command records data with a time interval of <dt> seconds. It
     will record data for a number of <npoints> and store it in <filename>.
+    
+    Parameters:
+        - dt:           time interval in between two measurements (excluding acquisition time) in seconds
+        - npoints:      number of data points (integer)
+        - filename:     string
+        - append:       if True, qtmlab will append data to a file with a filename that already exists
+        - silent:       if True, no output will be generated in the console
+        - precision:    normal: data will be stored as 8-digit float values (default of numpy: np.get_printoptions()['precision'])
+                        high:   data will be stored as 12-digit float values
+                        ultra:  data will be stored as 18-digit float values
     """
-    print('Recording data with a time interval of ' + str(dt) + ' seconds for (up to) ' + str(npoints) + ' points. Hit <Ctrl+C> to abort.')
-    print('----------------------------------------------------------------------')
-    if silent:
-        print('   Silent mode enabled. Measurements will not be logged in the console.')
+    if not silent:
+        print('Recording data with a time interval of ' + str(dt) + ' seconds for (up to) ' + str(npoints) + ' points. Hit <Ctrl+C> to abort.')
+        print('----------------------------------------------------------------------')
 
     # Trick to make sure that dictionary loading is handled properly at startup
     if md is None:
@@ -453,6 +471,9 @@ def record(dt, npoints, filename, append=False, md=None, silent=False):
             swcmd = 'record data with dt = ' + str(dt) + ' s for max ' + str(npoints) + ' datapoints'
             file.write(swcmd + '\n')
             file.write(header + '\n')
+    
+    if append == True:
+        filename = 'Data/' + samplename + '/' + filename
 
     # Perform record
     for i in range(npoints):
@@ -460,13 +481,16 @@ def record(dt, npoints, filename, append=False, md=None, silent=False):
             print(end='\r')
             print('   t = ' + (str(np.round(i*dt, 2)) + ' s').ljust(10) + ' | Measuring... ', end='\r')
         data = measure()
-        datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ')[1:-1]).replace('\n', '')
-        if append == False:
-            with open(filename, 'a') as file:
-                file.write(datastr + '\n')
-        elif append == True:
-            with open('Data//' + samplename + '//' + filename, 'a') as file:
-                file.write(datastr + '\n')
+        if precision == 'Normal':
+            datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ')[1:-1]).replace('\n', '')
+        elif precision == 'High':
+            datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ', precision=12)[1:-1]).replace('\n', '')
+        elif precision == 'Ultra':
+            datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ', precision=18)[1:-1]).replace('\n', '')
+
+        with open(filename, 'a') as file:
+            file.write(datastr + '\n')
+
         time.sleep(dt)
 
 def record_until(dt, filename, device, variable, operator, value, maxnpoints, md=None):
