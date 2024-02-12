@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.7.9 (2024-01-12)
+Version 2.7.10 (2024-02-12)
 
 Contributors:
 -- University of Twente --
@@ -30,7 +30,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.7.9 (2024-01-12)')
+print('QTMtoolbox version 2.7.10 (2024-02-12)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -239,6 +239,11 @@ def move(device, variable, setpoint, rate, silent=False):
         else:
             write_command = getattr(device, 'write_' + variable)
             write_command(setpoint)
+            
+        # Always finish with writing setpoint
+        write_command = getattr(device, 'write_' + variable)
+        write_command(setpoint)
+        
         if not silent:    
             print('    ' + device.__class__.__name__ + '.' + variable + ' has moved to its setpoint.')
         return
