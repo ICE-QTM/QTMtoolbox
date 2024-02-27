@@ -3,10 +3,10 @@
 Module to interact with a Quantum Design PPMS Dynacool system.
 Uses Python for .NET to communicate (install via " pip install pythonnet")
 
-Version 1.1 (2021-09-01)
-Daan Wielens - PhD at ICE/QTM
+Version 1.2 (2024-02-27)
+Daan Wielens - Researcher at ICE/QTM
 University of Twente
-daan@daanwielens.com
+d.h.wielens@utwente.nl
 
 Based on https://github.com/hinnefe2/ppms and https://github.com/masonlab/labdrivers
 """
@@ -31,7 +31,8 @@ DEFAULT_PORT = 11000
 
 class Dynacool:
     """Thin wrapper around the QuantumDesign.QDInstrument.QDInstrumentBase class"""
-
+    type = 'Dynacool'
+    
     def __init__(self, ip_address='127.0.0.1'):
        self.qdi_instrument = QDInstrumentFactory.GetQDInstrument(QDI_DYNACOOL_TYPE, False, ip_address, DEFAULT_PORT)
 
