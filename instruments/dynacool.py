@@ -3,7 +3,7 @@
 Module to interact with a Quantum Design PPMS Dynacool system.
 Uses Python for .NET to communicate (install via " pip install pythonnet")
 
-Version 1.2 (2024-02-27)
+Version 1.3 (2024-03-18)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 d.h.wielens@utwente.nl
@@ -31,8 +31,9 @@ DEFAULT_PORT = 11000
 
 class Dynacool:
     """Thin wrapper around the QuantumDesign.QDInstrument.QDInstrumentBase class"""
-    type = 'Dynacool'
     
+    type = 'Dynacool'
+
     def __init__(self, ip_address='127.0.0.1'):
        self.qdi_instrument = QDInstrumentFactory.GetQDInstrument(QDI_DYNACOOL_TYPE, False, ip_address, DEFAULT_PORT)
 
@@ -41,8 +42,8 @@ class Dynacool:
         resp = self.qdi_instrument.GetTemperature(0, 0)[1]
         return resp
     
-    def write_temp(self, temp, rate):
-        # Temperature in Kelvin and rate in Kelvin/min
+    def write_temp(self, temp, rate=5):
+        # Temperature in Kelvin and rate in Kelvin/min. Default rate is 5 K/min.
         return self.qdi_instrument.SetTemperature(temp, rate, 0)
 
     def read_fvalue(self):
@@ -50,8 +51,8 @@ class Dynacool:
         resp = self.qdi_instrument.GetField(0, 0)[1]
         return resp
     
-    def write_fvalue(self, field, rate):
-        # Field in Gauss and rate in Gauss/sec
+    def write_fvalue(self, field, rate=100):
+        # Field in Gauss and rate in Gauss/sec. Default rate is 100 Gauss/s.
         return self.qdi_instrument.SetField(field, rate, 0, 0)
     
     def waitForTemperature(self, delay=5, timeout=600):
