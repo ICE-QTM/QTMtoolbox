@@ -7,6 +7,16 @@ Version 0.1 (2024-01-15)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 d.h.wielens@utwente.nl
+
+-----------------------------------------------------------
+The Moku equipment requires additional software to be installed:
+1. Install the desktop app from https://www.liquidinstruments.com/products/desktop-apps/
+2. In Python, install the Moku package via 'pip install moku'
+3. Download the required moku files in a command prompt (Anaconda Prompt) via 'moku download'. 
+   To make sure that the correct files are downloaded, use 'moku download --fw_ver=<version>', where the 
+   <version> is an integer that can be obtained by running the desktop software and right-clicking the Moku
+   device to get the firmware version.
+-----------------------------------------------------------
 """
 
 from moku.instruments import MultiInstrument
