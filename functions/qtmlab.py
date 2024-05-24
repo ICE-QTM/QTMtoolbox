@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.7.10 (2024-02-12)
+Version 2.8.0 (2024-05-24)
 
 Contributors:
 -- University of Twente --
@@ -30,7 +30,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.7.10 (2024-02-12)')
+print('QTMtoolbox version 2.8.0 (2024-05-24)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -492,6 +492,8 @@ def record(dt, npoints, filename, append=False, md=None, silent=False, precision
             datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ', precision=12)[1:-1]).replace('\n', '')
         elif precision == 'Ultra':
             datastr = (str(i*dt) + ', ' + np.array2string(data, separator=', ', precision=18)[1:-1]).replace('\n', '')
+        else:
+            raise ValueError('The precision should either be "Normal" (8 digit), "High" (12 digit) or "Ultra" (18 digit). Please choose one of the three values.')
 
         with open(filename, 'a') as file:
             file.write(datastr + '\n')
@@ -1129,12 +1131,14 @@ def DACsyncing(start, stop, npoints):
     # Calculate the size of one dacstep
     dac_quantum = 4 / (2**16 - 1)
     # For the 'user input' <start>, <end> and <npoints>, calculate the requested stepsize
-    req_stepsize = (stop - start) / npoints
+    req_stepsize = np.abs((stop - start) / npoints)
     # Compute the closest number of dacsteps, which will be the new increment
     dac_stepsize = int(round(req_stepsize / dac_quantum))
     if dac_stepsize < 1:
         dac_stepsize = 1
-        print('Warning: your selected stepsize is smaller than a DAC step and thus will be converted into 1 DAC step (61.04 uV)')
+        print('    Warning: your selected stepsize is smaller than a DAC step and thus will be converted into 1 DAC step (61.04 uV)')
+    else:
+        print('    DAC stepsize: ' + str(dac_stepsize) + ' steps of 61.04 uV per data point.')
     '''
     Now construct the dac-linspace: start from the middle between <start> and <stop>, take 
     the dac value closest to that. Then, given the <dac_stepsize>, move outwards from there
@@ -1160,8 +1164,13 @@ def DACsyncing(start, stop, npoints):
     dac_start_index = int(np.ceil((start + 2)/dac_quantum))
     dac_stop_index = int(np.floor((stop + 2)/dac_quantum))
     # Remove all indices from index_list which are outside [dac_start_index, dac_stop_index]
-    index_list = index_list[index_list > dac_start_index]
-    index_list = index_list[index_list < dac_stop_index]
+    if dac_stop_index > dac_start_index:
+        index_list = index_list[index_list > dac_start_index]
+        index_list = index_list[index_list < dac_stop_index]
+    else:
+        index_list = index_list[index_list < dac_start_index]
+        index_list = index_list[index_list > dac_stop_index]
+        index_list = np.flip(index_list)
     # Construct voltage sweep_curve
     sweep_curve = dac_list[index_list]
     start = dac_list[dac_start_index]
