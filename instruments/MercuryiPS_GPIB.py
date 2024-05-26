@@ -6,6 +6,7 @@ Uses GPIB to communicate with the device.
 Version 1.2 (2024-05-26)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
+d.h.wielens@utwente.nl
 """
 
 import pyvisa as visa
@@ -117,31 +118,26 @@ class MercuryiPS:
         return resp
 
     def read_status(self):
-        # Software response of the magnet state
-        self.s.sendall('READ:DEV:GRPX:PSU:ACTN\r\n'.encode())
-        respX = self.s.recv(1400).decode().split(':')[-1].strip('\n')
-        self.s.sendall('READ:DEV:GRPY:PSU:ACTN\r\n'.encode())
-        respY = self.s.recv(1400).decode().split(':')[-1].strip('\n')
-        self.s.sendall('READ:DEV:GRPZ:PSU:ACTN\r\n'.encode())
-        respZ = self.s.recv(1400).decode().split(':')[-1].strip('\n') 
+        respX = self.visa.query('READ:DEV:GRPX:PSU:ACTN').split(':')[-1].strip('\n')
+        time.sleep(0.05)
+        respY = self.visa.query('READ:DEV:GRPY:PSU:ACTN').split(':')[-1].strip('\n')
+        time.sleep(0.05)
+        respZ = self.visa.query('READ:DEV:GRPZ:PSU:ACTN').split(':')[-1].strip('\n')
         if respX == 'HOLD' and respY == 'HOLD' and respZ == 'HOLD':
             return 'HOLD'
         if respX != 'HOLD' or respY != 'HOLD' or respZ != 'HOLD':
             return 'MOVING'
         
     def read_statusX(self):
-        self.s.sendall('READ:DEV:GRPX:PSU:ACTN\r\n'.encode())
-        resp = self.s.recv(1400).decode().split(':')[-1].strip('\n')
+        resp = self.visa.query('READ:DEV:GRPX:PSU:ACTN').split(':')[-1].strip('\n')
         return resp
-    
+
     def read_statusY(self):
-        self.s.sendall('READ:DEV:GRPY:PSU:ACTN\r\n'.encode())
-        resp = self.s.recv(1400).decode().split(':')[-1].strip('\n')
+        resp = self.visa.query('READ:DEV:GRPY:PSU:ACTN').split(':')[-1].strip('\n')
         return resp
-    
+
     def read_statusZ(self):
-        self.s.sendall('READ:DEV:GRPZ:PSU:ACTN\r\n'.encode())
-        resp = self.s.recv(1400).decode().split(':')[-1].strip('\n')
+        resp = self.visa.query('READ:DEV:GRPZ:PSU:ACTN').split(':')[-1].strip('\n')
         return resp
 
     def read_alarm(self):
@@ -163,24 +159,20 @@ class MercuryiPS:
         self.visa.query('SET:DEV:GRPZ:PSU:ACTN:CLMP')
 
     def hold(self):
-        self.s.sendall('SET:DEV:GRPX:PSU:ACTN:HOLD\r\n'.encode())
-        self.s.recv(1400)
-        self.s.sendall('SET:DEV:GRPY:PSU:ACTN:HOLD\r\n'.encode())
-        self.s.recv(1400)
-        self.s.sendall('SET:DEV:GRPZ:PSU:ACTN:HOLD\r\n'.encode())
-        self.s.recv(1400)  
+        self.visa.query('SET:DEV:GRPX:PSU:ACTN:HOLD')
+        time.sleep(0.05)
+        self.visa.query('SET:DEV:GRPY:PSU:ACTN:HOLD')
+        time.sleep(0.05)
+        self.visa.query('SET:DEV:GRPZ:PSU:ACTN:HOLD')
         
     def holdX(self):
-        self.s.sendall('SET:DEV:GRPX:PSU:ACTN:HOLD\r\n'.encode())
-        self.s.recv(1400)
+        self.visa.query('SET:DEV:GRPX:PSU:ACTN:HOLD')
 
     def holdY(self):
-        self.s.sendall('SET:DEV:GRPY:PSU:ACTN:HOLD\r\n'.encode())
-        self.s.recv(1400)
-        
+        self.visa.query('SET:DEV:GRPY:PSU:ACTN:HOLD')
+
     def holdZ(self):
-        self.s.sendall('SET:DEV:GRPZ:PSU:ACTN:HOLD\r\n'.encode())
-        self.s.recv(1400)
+        self.visa.query('SET:DEV:GRPZ:PSU:ACTN:HOLD')        
 
     def read_setpX(self):
         resp = self.visa.query('READ:DEV:GRPX:PSU:SIG:FSET')
