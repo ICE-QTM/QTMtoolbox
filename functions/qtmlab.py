@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.8.0 (2024-05-24)
+Version 2.8.1 (2024-05-26)
 
 Contributors:
 -- University of Twente --
@@ -30,7 +30,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.8.0 (2024-05-24)')
+print('QTMtoolbox version 2.8.1 (2024-05-26)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -177,11 +177,15 @@ def move(device, variable, setpoint, rate, silent=False):
         reached = False
         cntr = 0 # Initialise counter
         while not reached:
-            time.sleep(0.5)
-            state_command = getattr(device, 'read_status')
+            time.sleep(1)
+            state_command = getattr(device, 'read_status' + variable[-1])
             prev_val = float(read_command())
             cur_state = state_command()
             # Check if magnet is moving (RTOS) or holding (HOLD)
+            cur_str = convertUnits(prev_val)
+            set_str = convertUnits(setpoint) 
+            print(end='\r')
+            print((('    ' + device.__class__.__name__ + '.' + variable).ljust(20) + ' | Setpoint: ' + set_str.ljust(8) + ' | Current value: ' + cur_str.ljust(8)).ljust(80), end='\r')
             if cur_state == 'HOLD':
                 # Check if field value is same as setpoint (within margin because
                 # of the fluctuations in the given value)
@@ -189,13 +193,18 @@ def move(device, variable, setpoint, rate, silent=False):
                 if abs(new_val - setpoint) < 1E-4:
                     reached = True
                     time.sleep(1)
+                else:
+                   # print('state on Hold, but value not reached, try to write again')
+                    write_command(setpoint)
+                    
             else:
                 time.sleep(0.5)
                 cntr += 1
                 new_val = float(read_command())
-                if abs(new_val - prev_val) < 1E-4 and cntr == 10:
+                #print('field value is not reached, the value difference is'+str(abs(new_val - prev_val)))
+                if abs(new_val - prev_val) < 1E-4 and cntr == 5:
                     cntr = 0
-                    hold_command = getattr(device, 'hold')
+                    hold_command = getattr(device, 'hold' + variable[-1])
                     hold_command()
                     time.sleep(0.5)
                     write_command(setpoint)
