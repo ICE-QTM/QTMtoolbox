@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.8.1 (2024-05-26)
+Version 2.8.2 (2024-09-17)
 
 Contributors:
 -- University of Twente --
@@ -30,7 +30,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.8.1 (2024-05-26)')
+print('QTMtoolbox version 2.8.2 (2024-09-17)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -421,6 +421,11 @@ def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
     print('----------------------------------------------------------------------')
     stable = False
     t_stable = 0
+    '''
+    We add an additional waiting step here. If the user first sets/changes the device and then immediately reads it with the waitfor class,
+    the device may be unable to respond if its communication bus is too slow (i.e. CM4G100 psu). The short waiting time will prevent this from happening.
+    '''
+    time.sleep(0.5)
     while not stable:
         # Read value
         read_command = getattr(device, 'read_' + variable)
