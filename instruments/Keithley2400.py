@@ -5,7 +5,7 @@ Uses pyVISA to communicate with the GPIB device.
 Assumes GPIB address is of the form GPIB0::<xx>::INSTR where
 <xx> is the device address (number).
 
-Version 1.4 (2023-06-08)
+Version 1.5 (2024-10-18)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 d.h.wielens@utwente.nl
@@ -111,3 +111,19 @@ class Keithley2400:
     def read_Icomptrip(self):
         resp = int(self.visa.query('SENS:CURR:PROT:TRIP?').strip('\n'))
         return resp
+
+    def read_Vcomplevel(self):
+        # When sourcing a current, read the setpoint of the voltage compliance
+        resp = float(self.visa.query('SENS:VOLT:PROT:LEV?').strip('\n'))
+        return resp
+
+    def read_Icomplevel(self):
+        # When sourcing a voltage, read the setpoint of the current compliance
+        resp = float(self.visa.query('SENS:CURR:PROT:LEV?').strip('\n'))
+        return resp
+
+    def write_Vcomplevel(self, val):
+        self.visa.write('SENS:VOLT:PROT:LEV ' + str(val) + '\n')
+
+    def write_Icomplevel(self, val):
+        self.visa.write('SENS:CURR:PROT:LEV ' + str(val) + '\n')
