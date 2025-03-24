@@ -6,6 +6,7 @@ Available functions:
     move(device, variable, setpoint, rate)
     measure()
     sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, scale='lin')
+    avgsweep(device, variable, start, stop, rate, npoints, filename, sweepdev, scale='lin', navg=10)
     waitfor(device, variable, setpoint, threshold=0.05, tmin=60)
     record(dt, npoints, filename)
     record_until(dt, filename, device, variable, operator, value, maxnpoints)
@@ -15,7 +16,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.8.3 (2025-03-24)
+Version 2.9.0 (2025-03-24)
 
 Contributors:
 -- University of Twente --
@@ -30,7 +31,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.8.3 (2025-03-24)')
+print('QTMtoolbox version 2.9.0 (2025-03-24)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -410,6 +411,133 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
         t_end = time.time()
         timer.append(t_end - t_start)
     print('\nSweep finished.')
+    
+def avgsweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=None, scale='lin', precision='Normal', navg=10):
+    """
+    The avgsweep command sweeps the <variable> of <device>, from <start> to <stop>.
+    It repeats the measurement <navg> times and then stores the mean of all measurements in a separate file. 
+    Sweeping is done at <rate> and <npoints> are recorded to a datafile saved
+    as <filename>.
+    For measurements, the 'measurement dictionary', meas_dict, is used.
+    
+        - precision:    normal: data will be stored as 8-digit float values (default of numpy: np.get_printoptions()['precision'])
+                        high:   data will be stored as 12-digit float values
+                        ultra:  data will be stored as 18-digit float values
+    """
+    print('Starting an avgsweep of "' + sweepdev + '" from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' ('+ str(scale) + ' spacing)' +' steps with rate ' + str(rate) + ' with navg = ' + str(navg) + '.')
+    print('----------------------------------------------------------------------')
+    
+    # Trick to make sure that dictionary loading is handled properly at startup
+    if md is None:
+        md = meas_dict
+
+    # Initialise datafile
+    filename = checkfname(filename)
+
+    # Create sweep_curve - this piece of code has moved up to make sure that IVVI corrections still end up in the header of the file.
+    if scale == 'lin':
+        sweep_curve = np.linspace(start, stop, npoints)
+    if scale == 'log':
+        sweep_curve = np.logspace(np.log10(start), np.log10(stop), npoints)
+    
+    # IVVI DAC discretization (for explanation, see DACsyncing below / Manual.pdf)
+    if scale == 'IVVI':
+        sweep_curve, start, stop, npoints = DACsyncing(start, stop, npoints) 
+
+    # Create header
+    header = sweepdev
+    # The string 'setget' contains a "s" when the column is set during the measurement (i.e. a setpoint),
+    # and it is a "g" when it retrieved (get) during the measurement.
+    setget = 's'
+    # Add device of 'meas_list'
+    for dev in md:
+        header = header + ', ' + dev
+        setget = setget + 'g'
+    # Write header to file
+    with open(filename, 'w') as file:
+        dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+        file.write(dtm + '|' + setget + '\n')
+        swcmd = 'sweep of ' + sweepdev  + ' from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' steps ('+ str(scale) + ' spacing)' +' with rate ' + str(rate)
+        file.write(swcmd + '\n')
+        file.write(header + '\n')
+
+    for j in range(navg):
+        # Move to initial value
+        print(str(j) + ' | Moving to the initial value...')
+        move(device, variable, start, rate)
+    
+        print(str(j) + ' | Starting to sweep.')
+        timer = []
+        ETA = 0
+        # Perform sweep
+        for i in range(npoints):
+            t_start = time.time()
+            if len(timer) > 0:
+                ETA = np.mean(timer) * (npoints - i) + t_start
+                ETAstr = datetime.fromtimestamp(ETA).strftime('%d-%m-%Y %H:%M:%S')
+            # Move to measurement value
+            '''
+            To make sure that every print statement is completely overwritten, pad with at least 5 extra spaces (in case the setpoint is a 5-digit value).
+            In addition, pretty format small values.
+            '''
+            
+            cur_var = sweep_curve[i]
+            var_str = convertUnits(cur_var)
+                        
+            print(end='\r')
+            print((str(j) + ' |     Setpoint: ' + var_str.ljust(10) + ' | Moving to setpoint...').ljust(80), end='\r')
+            if len(timer) > 0:
+                print(end='\r')
+                print((str(j) + ' |     Setpoint: ' + var_str.ljust(10) + ' | Moving to setpoint... | Finished at: ' + ETAstr).ljust(80), end='\r')
+            move(device, variable, sweep_curve[i], rate, silent=True)
+            # Wait, then measure
+            print(end='\r')
+            print((str(j) + ' |     Setpoint: ' + var_str.ljust(10) + ' | Measuring...         ').ljust(80), end='\r')
+            if len(timer) > 0:
+                print(end='\r')
+                print((str(j) + ' |     Setpoint: ' + var_str.ljust(10) + ' | Measuring...          | Finished at: ' + ETAstr).ljust(80), end='\r')
+            time.sleep(dtw)
+            data = np.hstack((sweep_curve[i], measure()))
+    
+            # Add data to file
+            if precision == 'Normal':
+                datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
+            elif precision == 'High':
+                datastr = np.array2string(data, separator=', ', precision=12)[1:-1].replace('\n','')
+            elif precision == 'Ultra':
+                datastr = np.array2string(data, separator=', ', precision=18)[1:-1].replace('\n','')
+            with open(filename, 'a') as file:
+                file.write(datastr + '\n')
+            t_end = time.time()
+            timer.append(t_end - t_start)
+        print('\n' + str(j) + ' | Sweep finished.')
+        
+    # Averaging
+    print('Starting averaging...')
+    data = np.loadtxt(filename, skiprows=3, delimiter=',')
+    data_avg = np.zeros((npoints, data.shape[1]))
+    for i in range(data.shape[1]):
+        data_avg[:,i] = np.mean(np.reshape(data[:,i], (navg, npoints)).T, axis=1)
+    
+    # Write header to file
+    with open(filename[:-4] + '_avg.csv', 'w') as file:
+        dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+        file.write(dtm + '|' + setget + '\n')
+        swcmd = 'sweep of ' + sweepdev  + ' from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' steps ('+ str(scale) + ' spacing)' +' with rate ' + str(rate)
+        file.write(swcmd + '\n')
+        file.write(header + '\n')
+
+    # Write data to file
+    for i in range(npoints):
+        data = data_avg[i,:]
+        if precision == 'Normal':
+            datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
+        elif precision == 'High':
+            datastr = np.array2string(data, separator=', ', precision=12)[1:-1].replace('\n','')
+        elif precision == 'Ultra':
+            datastr = np.array2string(data, separator=', ', precision=18)[1:-1].replace('\n','')
+        with open(filename[:-4] + '_avg.csv', 'a') as file:
+            file.write(datastr + '\n')
 
 def waitfor(device, variable, setpoint, threshold=0.05, tmin=60):
     """
