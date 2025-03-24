@@ -1099,7 +1099,7 @@ def snapshot(md=None):
         # For each device, get all "read_" attributes
         for [devobj, devname]  in zip(dev_obj_list, dev_name_list):
             print(end='\r')
-            print('Generating snapshot: ' + devname, end='\r')
+            print('Generating snapshot: ' + devname.ljust(12), end='\r')
             attr_list = [attr for attr in dir(devobj) if 'read_' in attr]
             # Loop over attributes, measure property, write to file
             for attr in attr_list:
