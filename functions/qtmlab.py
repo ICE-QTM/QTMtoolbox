@@ -15,7 +15,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.8.2 (2024-09-17)
+Version 2.8.3 (2025-03-24)
 
 Contributors:
 -- University of Twente --
@@ -30,7 +30,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.8.2 (2024-09-17)')
+print('QTMtoolbox version 2.8.3 (2025-03-24)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -1082,7 +1082,8 @@ def snapshot(md=None):
     """
     if md is None:
         md = meas_dict
-    
+        
+    print('Creating snapshot for all devices listed in the "meas_dict"...')
     # Get list with unique devices
     dev_obj_list = [] 
     dev_name_list = []               
@@ -1097,6 +1098,8 @@ def snapshot(md=None):
         
         # For each device, get all "read_" attributes
         for [devobj, devname]  in zip(dev_obj_list, dev_name_list):
+            print(end='\r')
+            print('Generating snapshot: ' + devname, end='\r')
             attr_list = [attr for attr in dir(devobj) if 'read_' in attr]
             # Loop over attributes, measure property, write to file
             for attr in attr_list:
@@ -1105,6 +1108,8 @@ def snapshot(md=None):
                     meas_command = getattr(devobj, attr)
                     data = meas_command()
                     file.write(devname + '.' + attr + ': ' + str(data) + '\n')
+    
+    print('Generating snapshot: done.')
             
 def scan_gpib():
     import pyvisa as visa
