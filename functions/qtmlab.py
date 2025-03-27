@@ -16,7 +16,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.9.0 (2025-03-24)
+Version 2.9.1 (2025-03-25)
 
 Contributors:
 -- University of Twente --
@@ -31,7 +31,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.9.0 (2025-03-24)')
+print('QTMtoolbox version 2.9.1 (2025-03-25)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -412,10 +412,11 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
         timer.append(t_end - t_start)
     print('\nSweep finished.')
     
-def avgsweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=None, scale='lin', precision='Normal', navg=10):
+def avgsweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=None, scale='lin', precision='Normal', navg=10, dt=0):
     """
     The avgsweep command sweeps the <variable> of <device>, from <start> to <stop>.
     It repeats the measurement <navg> times and then stores the mean of all measurements in a separate file. 
+    The <dt> parameter introduces an additional waiting time in between each sweep (after the system is moved to the first position of the sweep_list)
     Sweeping is done at <rate> and <npoints> are recorded to a datafile saved
     as <filename>.
     For measurements, the 'measurement dictionary', meas_dict, is used.
@@ -465,7 +466,10 @@ def avgsweep(device, variable, start, stop, rate, npoints, filename, sweepdev, m
         # Move to initial value
         print(str(j) + ' | Moving to the initial value...')
         move(device, variable, start, rate)
-    
+        if dt > 0:
+            print(str(j) + ' | Waiting before sweep for ' + str(dt) + ' s.')
+            time.sleep(dt)
+            
         print(str(j) + ' | Starting to sweep.')
         timer = []
         ETA = 0
