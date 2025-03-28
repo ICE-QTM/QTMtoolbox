@@ -1,0 +1,135 @@
+# -*- coding: utf-8 -*-
+"""
+Module to interact with an Anritsu MS2090A Spectrum Analyzer.
+Uses pyVISA to communicate with the ethernet device.
+
+Version 1.0 (2025-03-28)
+Daan Wielens - Researcher at ICE/QTM
+University of Twente
+"""
+
+import socket
+import numpy as np
+
+class AnritsuMS2090A:
+    type = 'AnritsuMS2090A'
+    
+    def __init__(self, IPaddress):
+        self.s = socket.socket()
+        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.s.connect((IPaddress, 9001))
+        
+    def close(self):
+        self.s.close()
+        
+    def query(self, val):
+        cmd = val + '\r\n'
+        self.s.sendall(cmd.encode())
+        resp = self.s.recv(2048).decode()
+        return resp
+    
+    def write(self, val):
+        cmd = val + '\r\n'
+        self.s.sendall(cmd.encode())
+    
+    def get_iden(self):
+        self.s.sendall('*IDN?\r\n'.encode())
+        resp = self.s.recv(2048).decode()
+        return resp
+    
+    # Read and write frequencies (all in Hz)
+    def read_fstart(self):
+        return float(self.query('SENS:FREQ:STAR?'))
+    
+    def read_fstop(self):
+        return float(self.query('SENS:FREQ:STOP?'))
+    
+    def read_fcent(self):
+        return float(self.query('SENS:FREQ:CENT?'))
+    
+    def read_fspan(self):
+        return float(self.query('SENS:FREQ:SPAN?'))
+    
+    def write_fstart(self, val):
+        self.write('SENS:FREQ:STAR ' + str(val))
+        
+    def write_fstop(self, val):
+        self.write('SENS:FREQ:STOP ' + str(val))
+        
+    def write_fcent(self, val):
+        self.write('SENS:FREQ:CENT ' + str(val))
+        
+    def write_fspan(self, val):
+        self.write('SENS:FREQ:SPAN ' + str(val))
+        
+    # Read and write RBW (Hz)
+    def read_rbw(self):
+        return float(self.query('BAND:RES?'))
+    
+    def write_rbw(self, val):
+        self.write('BAND:RES ' + str(val))
+        
+    # Read and write reference level (dBm)
+    def read_reflvl(self):
+        return float(self.query('DISP:WIND:TRAC:Y:SCAL:RLEV?'))
+    
+    def write_reflvl(self, val):
+        self.write('DISP:WIND:TRAC:Y:SCAL:RLEV ' + str(val))
+        
+    # Read and write scale per division (dB)
+    def read_pdiv(self):
+        return float(self.query('DISP:WIND:TRAC:Y:SCAL:PDIV?'))
+    
+    def write_pdiv(self, val):
+        self.write('DISP:WIND:TRAC:Y:SCAL:PDIV ' + str(val))
+        
+    # Read and write number of points
+    def read_npoints(self):
+        return int(self.query('DISP:POIN?'))
+    
+    def write_npoints(self, val):
+        self.write('DISP:POIN ' + str(val))
+    
+    # Read averaging type (NORM, MIN, MAX, AVER, RMAX, RMIN, RAV)
+    def read_avgtype(self):
+        return self.query('SENS:AVER:TYPE?').strip('\n')
+    
+    def write_avgtype(self, val):
+        if val in ['NORM', 'MIN', 'MAX', 'AVER', 'RMAX', 'RMIN', 'RAV']:
+            self.write('SENS:AVER:TYPE ' + val)
+        else:
+            raise ValueError('Averaging types are NORM, MIN, MAX, AVER, RMAX, RMIN, RAV')
+            
+    def read_navg(self):
+        return int(self.query('SENS:AVER:COUN?'))
+    
+    def write_navg(self, val):
+        if val < 2 or val > 1000:
+            raise ValueError('The value should be within the range 2 - 1000 and should be integer.')
+        self.write('SENS:AVER:COUN ' + str(val))
+            
+    # Read trace
+    def get_trace1(self):
+        # The device gives more data than nbytes indicates, so lets check against npoints
+        npoints = self.read_npoints()
+        # The command send two responses: firstly the header indicating the block length (which we ignore), then the data itself
+        resp = self.query('TRAC:DATA? 1')
+        nbytes = int(resp[2:])
+        # Keep receiving data until we got it all (based on length of splitted string)
+        commas = 0 
+        data = ''
+        while commas < npoints - 1:
+            resp = self.s.recv(nbytes).decode()
+            data = data + resp          
+            commas = len(data.split(','))
+        # The data is now a string of '-169.22', '-140.22', ... , so convert to float array  
+        return np.array(data.split(','), dtype=np.float32)
+    
+    # Get marker values for marker 1 (set to highest peak within visible spectrum)
+    def get_mark1vals(self):
+        # Move marker to highest peak
+        self.write('CALC:MARK1:MAX')
+        # Get marker values
+        mark_freq = float(self.query('CALC:MARK1:X?'))
+        mark_amp = float(self.query('CALC:MARK1:Y?'))
+        return [mark_freq, mark_amp]
