@@ -19,7 +19,7 @@ A screenshot of the plot tool is shown below.
 
 A screenshot is shown below.
 
-![QTMplot_dual.pyw](images/QTMplot_dual_fig.png)
+![QTMplot_dual.pyw](images/QTMplot_dual_figv2.png)
 
 **Tips** 
 
