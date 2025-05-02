@@ -2,7 +2,7 @@
 """
 /--------------------------------------\
 |      Live Plotting of QTM data       |
-|           Version 1.1                |
+|           Version 1.2                |
 |           D.H. Wielens               |
 \--------------------------------------/
 The 'dual' version can plot two lines simultaneously.
@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         
-        self.setWindowTitle('QTMplot - dual version v1.1 (2025-05-02)')
+        self.setWindowTitle('QTMplot - dual version v1.2 (2025-05-02)')
         window_icon=QIcon()
         window_icon.addFile('icons/QTMplotIcon32.png')
         self.setWindowIcon(window_icon)
@@ -127,8 +127,9 @@ class MainWindow(QMainWindow):
         self.y2_multval = 1
         self.y2_offval = 0
         self.pen = pg.mkPen(color=(31, 119, 180), width=1)
+        self.pen2 = pg.mkPen(color=(242, 142, 43), width=1)
         self.data_line = self.graphWidget.plot(self.x, self.y, pen=self.pen, symbol='o', symbolSize=5, symbolBrush=(31, 119, 180), symbolPen=(31, 119, 180))
-        self.data_line2 = self.graphWidget.plot(self.x, self.y2, pen=self.pen, symbol='o', symbolSize=5, symbolBrush=(242, 142, 43), symbolPen=(242, 142, 43))
+        self.data_line2 = self.graphWidget.plot(self.x, self.y2, pen=self.pen2, symbol='o', symbolSize=5, symbolBrush=(242, 142, 43), symbolPen=(242, 142, 43))
         
         
         # Set (x,y) indices to (0,1) for initial plot
@@ -175,7 +176,7 @@ class MainWindow(QMainWindow):
             self.y2 = []
             self.graphWidget.clear()
             self.data_line = self.graphWidget.plot(self.x, self.y, pen=self.pen, symbol='o', symbolSize=5, symbolBrush=(31, 119, 180), symbolPen=(31, 119, 180))
-            self.data_line2 = self.graphWidget.plot(self.x, self.y2, pen=self.pen, symbol='o', symbolSize=5, symbolBrush=(242, 142, 43), symbolPen=(242, 142, 43))
+            self.data_line2 = self.graphWidget.plot(self.x, self.y2, pen=self.pen2, symbol='o', symbolSize=5, symbolBrush=(242, 142, 43), symbolPen=(242, 142, 43))
         else:
             # Store data to (x,y) variables, then update the line
             self.x = self.data[xindex].data
