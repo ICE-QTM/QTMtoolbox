@@ -15,6 +15,12 @@ A screenshot of the plot tool is shown below.
 
 ![QTMplot.py](images/QTMplot_screenshot.PNG)
 
+* **QTMplot_dual.pyw** is an alternative plot tool that allows one to monitor two parameters at the same time. They're plotted on the same y-axis, but the values of the second line can be altered with a multiplier and offset to make it fit in the same range as the first line.
+
+A screenshot is shown below.
+
+![QTMplot_dual.pyw](images/QTMplot_dual_fig.png)
+
 **Tips** 
 
 The plot tool has a few useful keyboard shortcuts!
