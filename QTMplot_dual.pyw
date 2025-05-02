@@ -2,7 +2,7 @@
 """
 /--------------------------------------\
 |      Live Plotting of QTM data       |
-|           Version 1.0                |
+|           Version 1.1                |
 |           D.H. Wielens               |
 \--------------------------------------/
 The 'dual' version can plot two lines simultaneously.
@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         
-        self.setWindowTitle('QTMplot - dual version v1.0 (2025-05-02)')
+        self.setWindowTitle('QTMplot - dual version v1.1 (2025-05-02)')
         window_icon=QIcon()
         window_icon.addFile('icons/QTMplotIcon32.png')
         self.setWindowIcon(window_icon)
@@ -80,6 +80,22 @@ class MainWindow(QMainWindow):
         self.ybox2 = QComboBox()
         layout4.addWidget(self.ybox2)
         self.ybox2.activated.connect(self.ybox2index)
+        self.y2xlbl = QLabel('x')
+        self.y2xlbl.setFixedWidth(10)
+        layout4.addWidget(self.y2xlbl)
+        self.y2mult = QLineEdit('1')
+        self.y2mult.setFixedWidth(50)
+        self.y2mult.returnPressed.connect(self.y2mult_changed)
+        layout4.addWidget(self.y2mult)
+        self.y2plbl = QLabel('+')
+        self.y2plbl.setFixedWidth(10)
+        layout4.addWidget(self.y2plbl)
+        self.y2off = QLineEdit('0')
+        self.y2off.setFixedWidth(50)
+        self.y2off.returnPressed.connect(self.y2off_changed)
+        layout4.addWidget(self.y2off)
+        
+        
         layout1.addLayout(layout4)
         
         # Add some shortcuts for convenience
@@ -108,6 +124,8 @@ class MainWindow(QMainWindow):
         self.x = []
         self.y = []
         self.y2 = []
+        self.y2_multval = 1
+        self.y2_offval = 0
         self.pen = pg.mkPen(color=(31, 119, 180), width=1)
         self.data_line = self.graphWidget.plot(self.x, self.y, pen=self.pen, symbol='o', symbolSize=5, symbolBrush=(31, 119, 180), symbolPen=(31, 119, 180))
         self.data_line2 = self.graphWidget.plot(self.x, self.y2, pen=self.pen, symbol='o', symbolSize=5, symbolBrush=(242, 142, 43), symbolPen=(242, 142, 43))
@@ -162,12 +180,12 @@ class MainWindow(QMainWindow):
             # Store data to (x,y) variables, then update the line
             self.x = self.data[xindex].data
             self.y = self.data[yindex].data
-            self.y2 = self.data[yindex2].data
+            self.y2 = self.data[yindex2].data * self.y2_multval + self.y2_offval
             self.data_line.setData(self.x, self.y)
             self.data_line2.setData(self.x, self.y2)
         # Update axes labels
         self.graphWidget.setLabel('bottom', self.var_names[xindex], color='black', size=15)
-        self.graphWidget.setLabel('left', '1: ' + self.var_names[yindex] + ', 2: ' + self.var_names[yindex2], color='black', size=15)
+        self.graphWidget.setLabel('left', '1: ' + self.var_names[yindex] + ', 2: ' + str(self.y2_multval) + ' x ' + self.var_names[yindex2] + ' + ' + str(self.y2_offval), color='black', size=15)
     
     def xboxindex(self, i):
         self.xindex = i
@@ -181,6 +199,16 @@ class MainWindow(QMainWindow):
         
     def ybox2index(self, i):
         self.yindex2 = i
+        self.updateData(self.xindex, self.yindex, self.yindex2)
+        self.graphWidget.autoRange()
+        
+    def y2mult_changed(self):
+        self.y2_multval = float(self.y2mult.text())
+        self.updateData(self.xindex, self.yindex, self.yindex2)
+        self.graphWidget.autoRange()
+    
+    def y2off_changed(self):
+        self.y2_offval = float(self.y2off.text())
         self.updateData(self.xindex, self.yindex, self.yindex2)
         self.graphWidget.autoRange()
         
