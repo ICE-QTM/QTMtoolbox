@@ -21,6 +21,12 @@ A screenshot is shown below.
 
 ![QTMplot_dual.pyw](images/QTMplot_dual_figv2.png)
 
+* **QTMheatmap.pyw** is another alternative plot tool, intended for monitoring megasweeps with a heatmap. After picking an x-axis and y-axis, Values can be picked for display as heatmap.
+
+A screenshot is shown below.
+
+![QTMheatmap.pyw](images/QTMheatmap.png)
+
 **Tips** 
 
 The plot tool has a few useful keyboard shortcuts!
