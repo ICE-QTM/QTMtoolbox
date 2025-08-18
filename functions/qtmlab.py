@@ -11,12 +11,12 @@ Available functions:
     record(dt, npoints, filename)
     record_until(dt, filename, device, variable, operator, value, maxnpoints)
     multisweep(sweep_list, npoints, filename)
-    megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard', scale='lin')
+    megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard', scale='lin', dt_settleslow=0.001, dt_settleslow=0.001)
     multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename)
     snapshot()
     scan_gpib()
 
-Version 2.9.1 (2025-03-25)
+Version 2.9.2 (2025-08-18)
 
 Contributors:
 -- University of Twente --
@@ -31,7 +31,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.9.1 (2025-03-25)')
+print('QTMtoolbox version 2.9.2 (2025-08-18)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -265,13 +265,17 @@ def move(device, variable, setpoint, rate, silent=False):
     a linspace of setpoints and push them to the device at a regular interval.
     """
 
-    # Get current Value
+    # Get current Value, time its duration for estimating <dt_real>
+    t0 = time.time()
     read_command = getattr(device, 'read_' + variable)
     cur_val = float(read_command())
+    t_read = time.time() - t0
+    
+    dt_real = t_read * 2 + dt # Assumption that read/write takes same amount of time. Not really true, but good starting point.
     
     # Determine number of steps
     Dt = abs(setpoint - cur_val) / rate
-    nSteps = int(round(Dt / dt))
+    nSteps = int(round(Dt / dt_real))
     # Only create linspace and move in steps when nSteps > 0
     if nSteps != 0:
         # Create list of setpoints and change setpoint by looping through array
@@ -792,12 +796,14 @@ def multisweep(sweep_list, npoints, filename, md=None):
         timer.append(t_end - t_start)
     print('\nMultisweep finished.')
 
-def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard', scale='lin', md=None):
+def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard', scale='lin', dt_settleslow = 0.001, dt_settlefast = 0.001, md=None):
     """
     The megasweep command sweeps two variables. Variable 1 is the "slow" variable.
     For every datapoint of variable 1, a sweep of variable 2 ("fast" variable) is performed.
     The syntax for both variables is <device>, <variable>, <start>, <stop>, <rate>, <npoints>.
     For measurements, the 'measurement dictionary', meas_dict, is used.
+    The <dt_settleslow> option specifies a waiting time (in seconds) in between moving the slow axis and starting along the fast axis. Currently only implemented for <standard> mode!
+    The <dt_settlefast> specifies a waiting time after moving the fast axis, before sweeping it 'back'. Useful for capacitive/slow devices.
     If the scale is changed from 'lin' to 'IVVI', the DAC syncing (see Manual.pdf on 'sweep') will be enabled for the fast axis (variable 2).
     """
     print('Starting a "' + mode + '" megasweep of the following variables:')
@@ -847,7 +853,10 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
             t_slow_start = time.time()
             # Move device1 to value1
             move(device1, variable1, sweep_curve1[i], rate1, silent=True)
+            time.sleep(dt_settleslow)
             # Sweep variable2
+            move(device2, variable2, sweep_curve2[0], rate2, silent=True)
+            time.sleep(dt_settlefast)
             t_slow_end = time.time() # This times the duration of a 'move' of the slow device
             timer_slow.append(t_slow_end - t_slow_start)
             for j in range(npoints2):
