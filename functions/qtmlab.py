@@ -5,18 +5,18 @@ Functions that can be used in measurements within the QTMlab framework.
 Available functions:
     move(device, variable, setpoint, rate)
     measure()
-    sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, scale='lin')
+    sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, scale='lin', dt_settle=0.001)
     avgsweep(device, variable, start, stop, rate, npoints, filename, sweepdev, scale='lin', navg=10)
     waitfor(device, variable, setpoint, threshold=0.05, tmin=60)
     record(dt, npoints, filename)
     record_until(dt, filename, device, variable, operator, value, maxnpoints)
     multisweep(sweep_list, npoints, filename)
-    megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard', scale='lin', dt_settleslow=0.001, dt_settleslow=0.001)
-    multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename)
+    megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev1, sweepdev2, mode='standard', scale='lin', dt_settleslow=0.001, dt_settlefast=0.001)
+    multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename, dt_settleslow=0.001, dt_settlefast=0.001)
     snapshot()
     scan_gpib()
 
-Version 2.9.2 (2025-08-18)
+Version 2.9.3 (2025-08-26)
 
 Contributors:
 -- University of Twente --
@@ -31,7 +31,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.9.2 (2025-08-18)')
+print('QTMtoolbox version 2.9.3 (2025-08-26)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -318,7 +318,7 @@ def measure(md=None):
     return data
 
 
-def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=None, scale='lin', precision='Normal'):
+def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=None, scale='lin', precision='Normal', dt_settle=0.001):
     """
     The sweep command sweeps the <variable> of <device>, from <start> to <stop>.
     Sweeping is done at <rate> and <npoints> are recorded to a datafile saved
@@ -369,6 +369,7 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
     # Move to initial value
     print('Moving to the initial value...')
     move(device, variable, start, rate)
+    time.sleep(dt_settle)
 
     print('Starting to sweep.')
     timer = []
@@ -992,7 +993,7 @@ def megasweep(device1, variable1, start1, stop1, rate1, npoints1, device2, varia
                         file.write(datastr + '\n')
 
 
-def multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename, md=None):
+def multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename, dt_settleslow=0.001, dt_settlefast=0.001, md=None):
     """
     The multimegasweep combines the two-axis measurements of the megasweep with the possibility
     of the multisweep to sweep multiple variables simultaneously. Both megasweep axes hold a
@@ -1070,6 +1071,7 @@ def multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename, md=No
         for j in range(len(sweep_list1)):
             move(sweep_list1[j][0], sweep_list1[j][1], sweep_curve_list1[j][i], sweep_list1[j][4], silent=True)
         t_slow_end = time.time()
+        time.sleep(dt_settleslow)
         timer_slow.append(t_slow_end - t_slow_start) # This times the duration of a 'move' of all slow devices
         
         # Sweep fast axis
@@ -1081,6 +1083,9 @@ def multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename, md=No
             # Move to the measurement values
             for l in range(len(sweep_list2)):
                 move(sweep_list2[l][0], sweep_list2[l][1], sweep_curve_list2[l][k], sweep_list2[l][4], silent=True)
+                
+            if k == 0:
+                time.sleep(dt_settlefast)
                 
             setp1_str = convertUnits(sweep_curve_list1[0][i])
             setp2_str = convertUnits(sweep_curve_list2[0][k]) 
