@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Module to interact with an Anritsu MS2090A Spectrum Analyzer.
-Uses pyVISA to communicate with the ethernet device.
+Module to interact with an Rohde & Schwarz Vector Network Analyzer.
+Uses sockets to communicate with the ethernet device.
 
-Version 1.0 (2025-03-28)
+Version 1.0 (2025-10-23)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 """
@@ -112,4 +112,5 @@ class ZNLE18:
             data = data + resp          
             commas = len(data.split(','))
         # The data is now a string of '-169.22', '-140.22', ... , so convert to float array  
+
         return np.array(data.split(','), dtype=np.float32)
