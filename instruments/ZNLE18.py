@@ -3,7 +3,7 @@
 Module to interact with an Rohde & Schwarz Vector Network Analyzer.
 Uses sockets to communicate with the ethernet device.
 
-Version 1.0 (2025-10-23)
+Version 1.1 (2026-03-14)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 """
@@ -74,14 +74,55 @@ class ZNLE18:
     def read_sweeptime(self):
         return float(self.query('SENS1:SWE:TIME?'))
     
-    def read_data1(self):
-        data = self.query('CALC:DATA? FDAT')
+    # Read and write the nr. of averages taken
+    def read_navg(self):
+        return int(self.query('SENS:AVER:COUN?'))
+    
+    def write_navg(self, val):
+        self.write('SENS:AVER:COUN ' + str(val))
+    
+    '''
+     The read_Trc<nr> commands get the data for the traces, if activated.
+     Their actual contents (which S-parameter, and whether magnitude or phase)
+     depends on whatever is set up in the instrument itself.
+    ''' 
+    
+    def read_Trc1(self):
+        # Get first trace
+        data = self.query("CALC:DATA:TRAC? 'Trc1', FDAT")
         # Keep requesting data from buffer until finished by '\n' character
         while '\n' not in data:
             data = data + self.s.recv(2048).decode()
         ldata = np.array(data.split(','), dtype='float')
         return ldata
     
+    def read_Trc2(self):
+        # Get second trace
+        data = self.query("CALC:DATA:TRAC? 'Trc2', FDAT")
+        # Keep requesting data from buffer until finished by '\n' character
+        while '\n' not in data:
+            data = data + self.s.recv(2048).decode()
+        ldata = np.array(data.split(','), dtype='float')
+        return ldata
+    
+    def read_Trc3(self):
+        # Get third trace
+        data = self.query("CALC:DATA:TRAC? 'Trc3', FDAT")
+        # Keep requesting data from buffer until finished by '\n' character
+        while '\n' not in data:
+            data = data + self.s.recv(2048).decode()
+        ldata = np.array(data.split(','), dtype='float')
+        return ldata
+    
+    def read_Trc4(self):
+        # Get fourth trace
+        data = self.query("CALC:DATA:TRAC? 'Trc4', FDAT")
+        # Keep requesting data from buffer until finished by '\n' character
+        while '\n' not in data:
+            data = data + self.s.recv(2048).decode()
+        ldata = np.array(data.split(','), dtype='float')
+        return ldata
+     
     def read_xdata(self):
         data = self.query('CALC:DATA:STIM?')
         # Keep requesting data from buffer until finished by '\n' character
@@ -97,20 +138,3 @@ class ZNLE18:
     def write_sourcepower(self, val):
         self.write('SOUR1:POW ' + str(val))
         
-    # Read trace
-    def get_trace1(self):
-        # The device gives more data than nbytes indicates, so lets check against npoints
-        npoints = self.read_npoints()
-        # The command send two responses: firstly the header indicating the block length (which we ignore), then the data itself
-        resp = self.query('TRAC:DATA? 1')
-        nbytes = int(resp[2:])
-        # Keep receiving data until we got it all (based on length of splitted string)
-        commas = 0 
-        data = ''
-        while commas < npoints - 1:
-            resp = self.s.recv(nbytes).decode()
-            data = data + resp          
-            commas = len(data.split(','))
-        # The data is now a string of '-169.22', '-140.22', ... , so convert to float array  
-
-        return np.array(data.split(','), dtype=np.float32)
