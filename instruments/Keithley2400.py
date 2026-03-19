@@ -5,7 +5,7 @@ Uses pyVISA to communicate with the GPIB device.
 Assumes GPIB address is of the form GPIB0::<xx>::INSTR where
 <xx> is the device address (number).
 
-Version 1.5 (2024-10-18)
+Version 1.6 (2026-03-19)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 d.h.wielens@utwente.nl
@@ -24,6 +24,7 @@ class WrongInstrErr(Exception):
 class Keithley2400:
     type = 'Keithley 2400 SourceMeter'
 
+    # Initialization block
     def __init__(self, GPIBaddr):
         rm = visa.ResourceManager()
         self.visa = rm.open_resource('GPIB0::{}::INSTR'.format(GPIBaddr))
@@ -33,46 +34,56 @@ class Keithley2400:
         if model not in ['MODEL 2400', 'MODEL 2401']:
             raise WrongInstrErr('Expected Keithley 2400/2401, got {}'.format(resp))
 
+    # Get identifier of the device. Returns a string.
     def get_iden(self):
         resp = str(self.visa.query('*IDN?'))
         return resp
 
+    # Close the GPIB connection to the device.
     def close(self):
         self.visa.close()
 
+    # Query a SCPI command directly. Returns an non-parsed answer as string.
     def query(self, val):
         resp = self.visa.query(val).strip('\n')
         return resp
 
+    # Read the output voltage (setpoint) when in DC voltage sourcing mode. Returns the voltage in Volts as float.
     def read_dcv(self):
         resp = float(self.visa.query('SOUR:VOLT:LEV:IMM:AMPL?').strip('\n'))
         return resp
 
+    # Writes the output voltage when in DC voltage sourcing mode. The value 'val' should be a numeric value in Volts.
     def write_dcv(self, val):
-        # Check if value in between +/-180 V
+        # A safety limit at +/- 180 V is applied in the code. Check if value in between +/-180 V
         fval = float(val)
         if abs(fval) > 180:
             print('Your setpoint is higher than the allowed +/- 180 V and will not be applied.')
         else:
             self.visa.write('SOUR:VOLT:LEV ' + str(val) + '\n')
 
+    # Read the output current (setpoint) when in DC current sourcing mode. Returns the current in Amps as float.
     def read_dci(self):
         resp = float(self.visa.query('SOUR:CURR:LEV:IMM:AMPL?'))
         return resp
 
+    # Writes the output current when in DC current sourcing mode. The value 'val' should be a numeric value in Amps.
     def write_dci(self, val):
         self.visa.write('SOUR:CURR:LEV ' + str(val) + '\n')
 
+    # Reads the measured value of the current in Amps and returns the value as float.
     def read_i(self):
         resp = str(self.visa.query('READ?').strip('\n'))
         val = float(resp.split(',')[1])
         return val
 
+    # Reads the measured value of the voltage in Volts and returns the value as float.
     def read_v(self):
         resp = str(self.visa.query('READ?').strip('\n'))
         val = float(resp.split(',')[0])
         return val
 
+    # When in DC voltage sourcing mode, the range can be changed to any of the specified options.
     def write_Vrange(self, val):
         if val in ['MAX', 'max', 'maximum', '210']:
             self.visa.write('SOUR:VOLT:RANG MAX\n')
@@ -80,7 +91,8 @@ class Keithley2400:
             self.visa.write('SOUR:VOLT:RANG DEF\n')
         if val in ['MIN', 'min', 'minimum']:
             self.visa.write('SOUR:VOLT:RANG MIN\n')
-            
+
+    # When in DC current sourcing mode, the range can be changed to any of the specified options.
     def write_Irange(self, val):
         if val in ['MAX', 'max', 'maximum', '1.05']:
             self.visa.write('SOUR:CURR:RANG MAX\n')
@@ -91,10 +103,12 @@ class Keithley2400:
         else :
             self.visa.write('SOUR:CURR:RANG ' + str(val) + '\n')
 
+    # Reads whether the output of the Keithley is turned ON or OFF.
     def read_output(self):
         resp = int(self.visa.query('OUTP?').strip('\n'))
         return resp
 
+    # Writes the state of the Keithley's output to either ON or OFF (1 or 0).
     def write_output(self, val):
         if val in [1, 'On', 'ON', 'on']:
             self.visa.write('OUTP 1\n')
@@ -103,27 +117,30 @@ class Keithley2400:
         else:
             print('This is not a valid argument for the Keithley Output command. Your command will be ignored.')
 
+    # When sourcing current, this returns 1 if the voltage is above the compliance limit and 0 otherwise. 
     def read_Vcomptrip(self):
-        # When sourcing current, this returns 1 if the voltage is above the compliance limit and 0 otherwise.
         resp = int(self.visa.query('SENS:VOLT:PROT:TRIP?').strip('\n'))
         return resp
-    
+
+    # When sourcing voltage, this returns 1 if the current is above the compliance limit and 0 otherwise. 
     def read_Icomptrip(self):
         resp = int(self.visa.query('SENS:CURR:PROT:TRIP?').strip('\n'))
         return resp
 
+    # When sourcing a current, read the setpoint of the voltage compliance.
     def read_Vcomplevel(self):
-        # When sourcing a current, read the setpoint of the voltage compliance
         resp = float(self.visa.query('SENS:VOLT:PROT:LEV?').strip('\n'))
         return resp
 
+    # When sourcing a voltage, read the setpoint of the current compliance.
     def read_Icomplevel(self):
-        # When sourcing a voltage, read the setpoint of the current compliance
         resp = float(self.visa.query('SENS:CURR:PROT:LEV?').strip('\n'))
         return resp
 
+    # When sourcing a current, write the setpoint of the voltage compliance (in Volts).
     def write_Vcomplevel(self, val):
         self.visa.write('SENS:VOLT:PROT:LEV ' + str(val) + '\n')
 
+    # When sourcing a voltage, write the setpoint of the current compliance (in Amps).
     def write_Icomplevel(self, val):
         self.visa.write('SENS:CURR:PROT:LEV ' + str(val) + '\n')
