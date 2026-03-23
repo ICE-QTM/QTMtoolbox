@@ -16,7 +16,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.9.4 (2026-03-23)
+Version 2.9.5 (2026-03-23)
 
 Contributors:
 -- University of Twente --
@@ -31,7 +31,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.9.4 (2026-03-23)')
+print('QTMtoolbox version 2.9.5 (2026-03-23)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -715,7 +715,7 @@ def record_until(dt, filename, device, variable, operator, value, maxnpoints, md
         if i > maxnpoints:
             reached = True        
         
-def multisweep(sweep_list, npoints, filename, md=None):
+def multisweep(sweep_list, npoints, filename, md=None, append=False):
     """
     The multisweep command sweeps multiple variables simultaneously. The sweep list contains
     all variables, along with their parameters, also stored in a list. An example could be
@@ -735,27 +735,31 @@ def multisweep(sweep_list, npoints, filename, md=None):
 
     if md is None:
         md = meas_dict
-
-    filename = checkfname(filename)
-
-    header = ''
-    setget = ''
-    for sweepvar in sweep_list:
-        if header == '':
-            header = sweepvar[5]
-            setget = 's'
-        else:
-            header = header + ', ' + sweepvar[5]
-            setget = setget + 's'
-    for dev in md:
-        header = header + ', ' + dev
-        setget = setget + 'g'
-    with open(filename, 'w') as file:
-        dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
-        file.write(dtm + '|' + setget + '\n')
-        swcmd = 'multisweep scan' # Implement this!
-        file.write(swcmd + '\n')
-        file.write(header + '\n')
+        
+    if append == False:
+        filename = checkfname(filename)
+    elif append == True:
+        filename = 'Data/' + samplename + '/' + filename
+        
+    if append == False:
+        header = ''
+        setget = ''
+        for sweepvar in sweep_list:
+            if header == '':
+                header = sweepvar[5]
+                setget = 's'
+            else:
+                header = header + ', ' + sweepvar[5]
+                setget = setget + 's'
+        for dev in md:
+            header = header + ', ' + dev
+            setget = setget + 'g'
+        with open(filename, 'w') as file:
+            dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+            file.write(dtm + '|' + setget + '\n')
+            swcmd = 'multisweep scan' # Implement this!
+            file.write(swcmd + '\n')
+            file.write(header + '\n')
 
     # Move variables to initial value
     for sweepvar in sweep_list:
