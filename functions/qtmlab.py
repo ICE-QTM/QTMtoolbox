@@ -5,7 +5,7 @@ Functions that can be used in measurements within the QTMlab framework.
 Available functions:
     move(device, variable, setpoint, rate)
     measure()
-    sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, scale='lin', dt_settle=0.001)
+    sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, scale='lin', dt_settle=0.001, append=False)
     avgsweep(device, variable, start, stop, rate, npoints, filename, sweepdev, scale='lin', navg=10)
     waitfor(device, variable, setpoint, threshold=0.05, tmin=60)
     record(dt, npoints, filename)
@@ -16,7 +16,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.9.3 (2025-08-26)
+Version 2.9.4 (2026-03-23)
 
 Contributors:
 -- University of Twente --
@@ -31,7 +31,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.9.3 (2025-08-26)')
+print('QTMtoolbox version 2.9.4 (2026-03-23)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -318,7 +318,7 @@ def measure(md=None):
     return data
 
 
-def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=None, scale='lin', precision='Normal', dt_settle=0.001):
+def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=None, scale='lin', precision='Normal', dt_settle=0.001, append=False):
     """
     The sweep command sweeps the <variable> of <device>, from <start> to <stop>.
     Sweeping is done at <rate> and <npoints> are recorded to a datafile saved
@@ -328,6 +328,8 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
         - precision:    normal: data will be stored as 8-digit float values (default of numpy: np.get_printoptions()['precision'])
                         high:   data will be stored as 12-digit float values
                         ultra:  data will be stored as 18-digit float values
+                        
+    If 'append' is set to True, the code will append to an already existing file and will not write a new header to that file. Default is False such that it does not break previous measurement code.
     """
     print('Starting a sweep of "' + sweepdev + '" from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' ('+ str(scale) + ' spacing)' +' steps with rate ' + str(rate) + '.')
     print('----------------------------------------------------------------------')
@@ -336,8 +338,11 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
     if md is None:
         md = meas_dict
 
-    # Initialise datafile
-    filename = checkfname(filename)
+    if append == False:
+        # Initialise datafile
+        filename = checkfname(filename)
+    elif append == True:
+        filename = 'Data/' + samplename + '/' + filename
 
     # Create sweep_curve - this piece of code has moved up to make sure that IVVI corrections still end up in the header of the file.
     if scale == 'lin':
@@ -349,22 +354,24 @@ def sweep(device, variable, start, stop, rate, npoints, filename, sweepdev, md=N
     if scale == 'IVVI':
         sweep_curve, start, stop, npoints = DACsyncing(start, stop, npoints) 
 
-    # Create header
-    header = sweepdev
-    # The string 'setget' contains a "s" when the column is set during the measurement (i.e. a setpoint),
-    # and it is a "g" when it retrieved (get) during the measurement.
-    setget = 's'
-    # Add device of 'meas_list'
-    for dev in md:
-        header = header + ', ' + dev
-        setget = setget + 'g'
-    # Write header to file
-    with open(filename, 'w') as file:
-        dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
-        file.write(dtm + '|' + setget + '\n')
-        swcmd = 'sweep of ' + sweepdev  + ' from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' steps ('+ str(scale) + ' spacing)' +' with rate ' + str(rate)
-        file.write(swcmd + '\n')
-        file.write(header + '\n')
+    if append == False:
+
+        # Create header
+        header = sweepdev
+        # The string 'setget' contains a "s" when the column is set during the measurement (i.e. a setpoint),
+        # and it is a "g" when it retrieved (get) during the measurement.
+        setget = 's'
+        # Add device of 'meas_list'
+        for dev in md:
+            header = header + ', ' + dev
+            setget = setget + 'g'
+        # Write header to file
+        with open(filename, 'w') as file:
+            dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+            file.write(dtm + '|' + setget + '\n')
+            swcmd = 'sweep of ' + sweepdev  + ' from ' + str(start) + ' to ' + str(stop) + ' in ' + str(npoints) + ' steps ('+ str(scale) + ' spacing)' +' with rate ' + str(rate)
+            file.write(swcmd + '\n')
+            file.write(header + '\n')  
 
     # Move to initial value
     print('Moving to the initial value...')
