@@ -16,7 +16,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.9.5 (2026-03-23)
+Version 2.9.6 (2026-03-30)
 
 Contributors:
 -- University of Twente --
@@ -31,7 +31,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.9.5 (2026-03-23)')
+print('QTMtoolbox version 2.9.6 (2026-03-30)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -1127,6 +1127,75 @@ def multimegasweep(sweep_list1, sweep_list2, npoints1, npoints2, filename, dt_se
         t_fast_end = time.time()
         timer_fast.append(t_fast_end - t_fast_start)
     print('\nMultimegasweep finished.')
+
+def multilistsweep(sweep_list, filename, md=None):
+    """
+    The multisweep command sweeps multiple variables simultaneously. The sweep list contains
+    all variables, along with their parameters, also stored in a list. An example could be
+
+        sweep_list = [
+                        [dev1, var1, <list of points>, rate1, sweepdev1],
+                        [dev2, var2, <list of points>, rate2, sweepdev2],
+                        [dev3, var3, <list of points>, rate3, sweepdev3],
+                        ....
+                     ]
+
+    The command moves all devices to their respective setpoints, takes a single measurement
+    and then moves all devices again to their next setpoint.
+    """
+    print('Starting a multisweep.')
+
+    if md is None:
+        md = meas_dict
+
+    filename = 'Data/' + filename
+    filename = checkfname(filename)
+
+    header = ''
+    for sweepvar in sweep_list:
+        if header == '':
+            header = sweepvar[4]
+        else:
+            header = header + ', ' + sweepvar[4]
+    for dev in md:
+        header = header + ', ' + dev
+    with open(filename, 'w') as file:
+        dtm = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+        file.write(dtm + '\n')
+        swcmd = 'multisweep scan' # Implement this!
+        file.write(swcmd + '\n')
+        file.write(header + '\n')
+
+    # Move variables to initial value
+    for sweepvar in sweep_list:
+        move(sweepvar[0], sweepvar[1], sweepvar[2][0], sweepvar[3])
+
+    # Create sweep curves
+    sweep_curve_list = []
+    for sweepvar in sweep_list:
+        sweep_curve = sweepvar[2]
+        sweep_curve_list.append(sweep_curve)
+        npoints = len(sweep_curve)
+
+    # Perform sweep
+    for i in range(npoints):
+        # Move to the measurement values
+        print('   Sweeping all variables. First variable to: {}'.format(sweep_curve_list[0][i]))
+        for j in range(len(sweep_list)):
+            move(sweep_list[j][0], sweep_list[j][1], sweep_curve_list[j][i], sweep_list[j][3])
+        # Wait, then measure
+        print('      Waiting for measurement...')
+        time.sleep(dtw)
+        print('      Performing measurement.')
+        data_setp = np.array([])
+        for j in range(len(sweep_list)):
+            data_setp = np.append(data_setp, sweep_curve_list[j][i])
+        data = np.hstack((data_setp, measure()))
+
+        # Add data to file
+        datastr = np.array2string(data, separator=', ')[1:-1].replace('\n','')
+        with open(filename, 'a') as file:
+            file.write(datastr + '\n')
 
 def megalistsweep(sweep_list, device2, variable2, start2, stop2, rate2, npoints2, filename, sweepdev2, mode='standard', md=None):
     """
