@@ -16,7 +16,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.9.6 (2026-03-30)
+Version 2.9.7 (2026-04-01)
 
 Contributors:
 -- University of Twente --
@@ -31,7 +31,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.9.6 (2026-03-30)')
+print('QTMtoolbox version 2.9.7 (2026-04-01)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -1148,7 +1148,6 @@ def multilistsweep(sweep_list, filename, md=None):
     if md is None:
         md = meas_dict
 
-    filename = 'Data/' + filename
     filename = checkfname(filename)
 
     header = ''
