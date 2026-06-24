@@ -5,7 +5,7 @@ Uses pyserial to communicate with the USB device.
 The device has a USB COM address of the form '<xx>'
 <xx> is the COM port number.
 
-Version 1.1 (2026-06-24)
+Version 1.2 (2026-06-24)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 
@@ -115,33 +115,37 @@ class QSwitch:
     
     def get_status(self):
         # Human-readable version of get_closed.
-        print('<> Listing all closed relays')
+
         resp = self.query('clos:stat?')
-        items = resp.split(',')
-        for item in items:
-            item = item.strip('(@').strip(')')
-            if ':' in item:
-                # If ':' is in the text, we are dealing with a range
-                range_list = item.split(':')
-                start_num = range_list[0].split('!')[0]
-                group_num = range_list[0].split('!')[1]
-                end_num = range_list[1].split('!')[0]
-                
-                if group_num == '0':
-                    print('   Device pins ' + str(start_num).ljust(2) + ' through ' + str(end_num).ljust(2) + ' are connected to the soft-acting ground')
-                elif group_num == '9':
-                    print('   Device pins ' + str(start_num).ljust(2) + ' through ' + str(end_num).ljust(2) + ' are connected to the corresponding pins on the IN Fisher connector')
+        if resp == '':
+            print('No relays are closed at the moment.')
+        else:
+            print('<> Listing all closed relays')
+            items = resp.split(',')
+            for item in items:
+                item = item.strip('(@').strip(')')
+                if ':' in item:
+                    # If ':' is in the text, we are dealing with a range
+                    range_list = item.split(':')
+                    start_num = range_list[0].split('!')[0]
+                    group_num = range_list[0].split('!')[1]
+                    end_num = range_list[1].split('!')[0]
+                    
+                    if group_num == '0':
+                        print('   Device pins ' + str(start_num).ljust(2) + ' through ' + str(end_num).ljust(2) + ' are connected to the soft-acting ground')
+                    elif group_num == '9':
+                        print('   Device pins ' + str(start_num).ljust(2) + ' through ' + str(end_num).ljust(2) + ' are connected to the corresponding pins on the IN Fisher connector')
+                    else:
+                        print('   Device pins ' + str(start_num).ljust(2) + ' through ' + str(end_num).ljust(2) + ' are connected to BNC terminal' + str(group_num).ljust(2))                
                 else:
-                    print('   Device pins ' + str(start_num).ljust(2) + ' through ' + str(end_num).ljust(2) + ' are connected to BNC terminal' + str(group_num).ljust(2))                
-            else:
-                # Single connections
-                connections = item.split('!')
-                if connections[1] == '!0':
-                    print('   Device pin ' + str(connections[0]).ljust(2) + ' is connected to the soft-acting ground')
-                elif connections[1] == '!9':
-                    print('   Device pin ' + str(connections[0]).ljust(2) + ' is connected to the corresponding pin on the IN Fisher connector')
-                else:
-                    print('   Device pin ' + str(connections[0]).ljust(2) + ' is connected to BNC terminal ' + str(connections[1].strip(')').ljust(2)))
+                    # Single connections
+                    connections = item.split('!')
+                    if connections[1] == '!0':
+                        print('   Device pin ' + str(connections[0]).ljust(2) + ' is connected to the soft-acting ground')
+                    elif connections[1] == '!9':
+                        print('   Device pin ' + str(connections[0]).ljust(2) + ' is connected to the corresponding pin on the IN Fisher connector')
+                    else:
+                        print('   Device pin ' + str(connections[0]).ljust(2) + ' is connected to BNC terminal ' + str(connections[1].strip(')').ljust(2)))
 
 
     # Error handling
