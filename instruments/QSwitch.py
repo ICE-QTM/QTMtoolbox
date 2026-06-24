@@ -5,9 +5,33 @@ Uses pyserial to communicate with the USB device.
 The device has a USB COM address of the form '<xx>'
 <xx> is the COM port number.
 
-Version 1.0 (2026-06-24)
+Version 1.1 (2026-06-24)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
+
+-------------------------------------------------------------
+
+Typical workflow / example:
+    
+    1. Make sure that external equipment connected to the BNC terminals is at zero bias current/voltage
+    2. Unground the device
+        qs.unground_all()
+    3. Make connections for the sample (i.e. sample pin 14 to BNC terminal 1)
+        qs.connect_to_bnc(14, 1)
+    4. Check connections
+        qs.get_status()
+    5. Ramp up bias current/voltage
+    6. Run experiments
+    7. Ramp down bias current/voltage to prepare for QSwitch changes
+    8. Remove connections or reset QSwitch
+    8a. Remove connections --> this does not ground the device in the meantime
+        qs.disconnect_from_bnc(14, 1)
+      Now, connect to something else
+    8b. Reset full devices --> grounds (soft-acting GND) device and removes all connections
+        qs.reset()
+        
+-------------------------------------------------------------
+
 """
 
 import serial
