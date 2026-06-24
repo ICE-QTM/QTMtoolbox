@@ -37,7 +37,7 @@ class QSwitch:
         resp = self.ser.readline().decode().strip()
         model = resp.split(',')[1]
         if model != 'QSwitch':
-            raise WrongInstrError('Expected QSwitch, got {}'.format(resp))
+            raise WrongInstrErr('Expected QSwitch, got {}'.format(resp))
 
     def write(self, cmd):
         cmd_str = cmd.strip() + "\n"
