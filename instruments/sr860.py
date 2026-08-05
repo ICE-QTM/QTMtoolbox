@@ -46,19 +46,19 @@ class sr860:
         return self.visa.query(val).strip('\r\n')
 
     def read_x(self):
-        resp = float(self.visa.query('OUTP? 1').strip('\n').strip('\r'))
+        resp = float(self.visa.query('OUTP? 0').strip('\n').strip('\r'))
         return resp
 
     def read_y(self):
-        resp = float(self.visa.query('OUTP? 2').strip('\n').strip('\r'))
+        resp = float(self.visa.query('OUTP? 1').strip('\n').strip('\r'))
         return resp
 
     def read_r(self):
-        resp = float(self.visa.query('OUTP? 3').strip('\n').strip('\r'))
+        resp = float(self.visa.query('OUTP? 2').strip('\n').strip('\r'))
         return resp
 
     def read_theta(self):
-        resp = float(self.visa.query('OUTP? 4').strip('\n').strip('\r'))
+        resp = float(self.visa.query('OUTP? 3').strip('\n').strip('\r'))
         return resp
 
     def read_freq(self):
