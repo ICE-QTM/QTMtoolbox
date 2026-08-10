@@ -6,23 +6,42 @@ built-in 'time' module of Python.
 
 Note: timestamps are given since the epoch (01-01-1970 00:00:00).
 
-Version 1.1 (2023-05-30)
+Version 1.1.1 (2026-08-10)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
-d.h.wielens@utwente.nl
 """
 
 import time
 
 class curtime:
+    """
+    """
     type = 'Current time'
     def __init__(self):
         self.time = time
 
     def read_time(self):
+        """
+        Returns the epoch clocktime (given in seconds from 1970-01-01 00:00)
+        as a value in seconds. 
+        
+        Returns
+        -------
+        float
+            epoch time in seconds
+        """
         # Returns time in seconds as float number
         return time.time()
 
     def read_timens(self):
+        """
+        Returns the epoch clocktime (given in seconds from 1970-01-01 00:00)
+        as a value in nanoseconds. 
+        
+        Returns
+        -------
+        int
+            epoch time in nanoseconds
+        """
         # Returns time in nanoseconds as integer value
-        return time.time_ns()
+        return int(time.time_ns())
