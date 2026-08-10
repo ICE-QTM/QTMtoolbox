@@ -3,7 +3,7 @@
 Module to interact with a Thales PTR controller (XPCDE4865/X).
 Uses a serial connection to communicate with the device.
 
-Version 2.0 (2026-08-06)
+Version 2.1 (2026-08-10)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 
@@ -67,41 +67,139 @@ class ThalesPTR:
         self.ser.readline().decode() # The device always gives a reply, so always catch it.
         self.ser.close()
 
-    def read_Vsetp(self):
+    def read_Vsetp(self) -> float:
+        """
+        Returns the voltage setpoint of the temperature controller.
+        
+        Returns
+        ------
+        float [mV]
+            The voltage setpoint of the temperature controller.
+        """
         return float(self.query('RSP'))
     
-    def read_Vsensor(self):
+    def read_Vsensor(self) -> float:
+        """
+        Returns the actual voltage of the temperature sensor.
+        
+        Returns
+        ------
+        float [mV]
+            The actual voltage of the temperature sensor.
+        """
         return float(self.query('RVS'))
     
-    def read_Vac(self):
+    def read_Vac(self) -> float:
+        """
+        Returns the RMS drive voltage that is applied to the compressor.
+        
+        Returns
+        ------
+        float [Volts]
+            The RMS drive voltage that is applied to the compressor.
+        """
         return float(self.query('RVA'))
     
-    def read_Vdc(self):
+    def read_Vdc(self) -> float:
+        """
+        Returns the actual DC supply voltage of the controller.
+        
+        Returns
+        ------
+        float [Volts]
+            The DC supply voltage.
+        """
         return float(self.query('RVD'))
     
-    def read_freq(self):
+    def read_freq(self) -> float:
+        """
+        Returns the frequency at which the cooler is driven.
+        
+        Returns
+        ------
+        float [Hz]
+            The frequency at which the cooler is driven.
+        """
         return float(self.query('RFR'))
     
-    def read_remote(self):
+    def read_remote(self) -> int:
+        """
+        Returns the status of the remote on/off function.
+        
+        Returns
+        ------
+        int
+            1: Remote status = on
+            0: Remote status = off
+        """
         return int(self.query('RRE'))
     
-    def read_temp(self):
+    def read_temp(self) -> float:
+        """
+        Returns the temperature of the cold head. This temperature is 
+        based on the thermometer voltage which is converted based on 
+        calibration data.
+        
+        Returns
+        ------
+        float [K]
+            The cold head temperature.
+        """
         return self.mVtoK(self.read_Vsensor())
     
-    def read_Tsetp(self):
+    def read_Tsetp(self) -> float:
+        """
+        Returns the temperature setpoint of the cooler. This temperature is 
+        based on the thermometer voltage which is converted based on 
+        calibration data.
+        
+        Returns
+        ------
+        float [K]
+            The temperature setpoint of the cooler.
+        """
         return self.mVtoK(self.read_Vsetp())
     
-    def write_Vsetp(self, val):
+    def write_Vsetp(self, val: float):
+        """
+        Writes the voltage setpoint for the temperature controller. 
+        
+        Parameters
+        ----------
+        val : float [mV] 
+            The voltage setpoint for the temperature controller.
+            Note that 0.2 <= val <= 5000 
+        """
         if val >= 0.2 and val <= 5000:
             self.write('SSP ' + str(np.round(val, 3)))
         else:
             raise ValueError('Voltage setpoint [mV] needs to be within 0.2 and 5000 mV')
             
-    def write_remote(self, val):
+    def write_remote(self, val: int):
+        """
+        Sets the remote function of the cooler on or off. 
+        
+        Parameters
+        ----------
+        val : int
+            1: Remote status = on
+            0: Remote status = off
+        """
         if val == 0 or val == 1:
             self.write('SRE ' + str(val))
             
-    def write_Tsetp(self, val):
+    def write_Tsetp(self, val: float):
+        """
+        Writes the temperature setpoint for the controller. This temperature is 
+        based on the thermometer voltage which is converted based on 
+        calibration data.
+        
+        Parameters
+        ----------
+        val : float [K] 
+            The temperature setpoint for the controller.
+            Note that 50 <= val <= 300
+        """
         # This check ensures that the temperatures are within the allowed range
         if val >= 50 and val <= 300:
             # This furthermore will ensure that the voltage setpoint is within range of the controller 
