@@ -16,7 +16,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.9.7 (2026-04-01)
+Version 2.9.8 (2026-08-13)
 
 Contributors:
 -- University of Twente --
@@ -31,7 +31,7 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.9.7 (2026-04-01)')
+print('QTMtoolbox version 2.9.8 (2026-08-13)')
 print('----------------------------------------------------------------------')
 
 meas_dict = {}
@@ -1341,7 +1341,11 @@ def scan_gpib():
     rm = visa.ResourceManager()
     devs = rm.list_resources()
     for dev in devs:
-        ses = rm.open_resource(dev)
+        try:
+            ses = rm.open_resource(dev)
+        except:
+            print(f'Could not connect to device {dev}. No further info available.')
+            continue
         try:
             print(dev + ' : ' + ses.query('*IDN?'))
         except Exception:
