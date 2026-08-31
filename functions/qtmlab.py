@@ -37,14 +37,13 @@ print('----------------------------------------------------------------------')
 
 # Online version checker
 try:
-    from urllib import requests
-    url = requests.urlopen('https://raw.githubusercontent.com/ICE-QTM/QTMtoolbox/refs/heads/master/functions/qtmlab.py').read()
-    online_version = url.split('version_string = ')[0].split('\n')
+    from urllib import request
+    url = request.urlopen('https://raw.githubusercontent.com/ICE-QTM/QTMtoolbox/refs/heads/master/functions/qtmlab.py', timeout=2).read().decode()
+    online_version = url.split('version_string = ')[1].split('\n')[0][1:-1]
     if online_version != version_string:
         print('  A new version of the QTMtoolbox is available on GitHub: ', online_version)
 except Exception:
     pass
-
 
 meas_dict = {}
 
