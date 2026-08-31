@@ -16,7 +16,7 @@ Available functions:
     snapshot()
     scan_gpib()
 
-Version 2.9.8 (2026-08-13)
+Version 2.9.9 (2026-08-31)
 
 Contributors:
 -- University of Twente --
@@ -31,8 +31,20 @@ import os
 import math
 from datetime import datetime
 
-print('QTMtoolbox version 2.9.8 (2026-08-13)')
+version_string = '2.9.9 (2026-08-31)'
+print('QTMtoolbox version ', version_string)
 print('----------------------------------------------------------------------')
+
+# Online version checker
+try:
+    from urllib import requests
+    url = requests.urlopen('https://raw.githubusercontent.com/ICE-QTM/QTMtoolbox/refs/heads/master/functions/qtmlab.py').read()
+    online_version = url.split('version_string = ')[0].split('\n')
+    if online_version != version_string:
+        print('  A new version of the QTMtoolbox is available on GitHub: ', online_version)
+except Exception:
+    pass
+
 
 meas_dict = {}
 
