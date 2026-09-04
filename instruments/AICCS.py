@@ -3,12 +3,13 @@
 Module to interact with the AI-CCS.
 Uses TCP/IP sockets to communicate with the device.
 
-Version 1.1 (2026-09-04)
+Version 1.2 (2026-09-04)
 Daan Wielens - Researcher at ICE/QTM
 University of Twente
 """
 
 import socket
+import time
 
 class AICCS:
     type = 'AICCS'
@@ -28,10 +29,12 @@ class AICCS:
     def query(self, val):
         cmd = val + '\n'
         self.s.sendall(cmd.encode())
+        time.sleep(0.05)
         resp = self.s.recv(1400).decode()
         return resp
     
     def write(self, val):
+        time.sleep(0.05)
         cmd = val + '\n'
         self.s.sendall(cmd.encode())
 
@@ -44,16 +47,16 @@ class AICCS:
     # On a pair, currents must have opposite sign. When setting a channels current to a value that 
     # will change the channels polarity, the other channel in the pair will be set to 0.0mA.   
     def write_dci1A(self, val):
-        self.write('SOUR1A ' + str(val))
+        self.write('SOUR1A:CURR ' + str(val))
         
     def write_dci1B(self, val):
-        self.write('SOUR1B ' + str(val))
+        self.write('SOUR1B:CURR ' + str(val))
         
     def write_dci2A(self, val):
-        self.write('SOUR2A ' + str(val))
+        self.write('SOUR2A:CURR ' + str(val))
         
     def write_dci2B(self, val):
-        self.write('SOUR2B ' + str(val))
+        self.write('SOUR2B:CURR ' + str(val))
         
     def read_dci1A(self):
         return float(self.query('SOUR1A:CURR?'))
